@@ -130,12 +130,12 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
             <div className="relative group">
               <input 
                 type="date" 
-                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                className="absolute inset-0 opacity-0 cursor-pointer z-20 w-full h-full [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
-              <button type="button" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-xl transition-all border border-slate-100 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <button type="button" className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-2xl transition-all border border-slate-100 shadow-sm flex items-center justify-center relative z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
                 </svg>
               </button>
@@ -166,35 +166,35 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                 )}
                 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                  <div className="md:col-span-12 lg:col-span-6">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Description</label>
+                  <div className={isEditing ? "md:col-span-12" : "md:col-span-12 lg:col-span-6"}>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Description</label>
                     <input 
                       type="text" 
-                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all text-slate-700 placeholder:text-slate-300"
+                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 placeholder:text-slate-300 font-medium"
                       value={entry.description} 
                       onChange={e => handleEntryChange(index, 'description', e.target.value)} 
                       required 
                       placeholder="What was this for?"
                     />
                   </div>
-                  <div className="md:col-span-6 lg:col-span-3">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Amount</label>
+                  <div className={isEditing ? "md:col-span-6" : "md:col-span-6 lg:col-span-3"}>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Amount</label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">৳</span>
                       <input 
                         type="number" 
                         step="1"
-                        className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all text-slate-700 font-bold tabular-nums"
+                        className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-bold tabular-nums"
                         value={entry.amount} 
                         onChange={e => handleEntryChange(index, 'amount', e.target.value)} 
                         required 
                       />
                     </div>
                   </div>
-                  <div className="md:col-span-6 lg:col-span-3">
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Payment Method</label>
+                  <div className={isEditing ? "md:col-span-6" : "md:col-span-6 lg:col-span-3"}>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1 whitespace-nowrap overflow-hidden text-ellipsis">Payment Method</label>
                     <select 
-                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all text-slate-700"
+                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
                       value={entry.payment_method} 
                       onChange={e => handleEntryChange(index, 'payment_method', e.target.value)}
                     >
@@ -234,10 +234,10 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
               <button 
                 type="button" 
                 onClick={handleDelete}
-                className="bg-red-500 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-1.5 hover:bg-red-600 transition-all"
+                className="bg-[#EF233C] text-white font-bold py-2.5 px-5 rounded-xl text-sm flex items-center gap-2 hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 active:scale-[0.98]"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
                 Delete
               </button>
@@ -253,7 +253,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
               </button>
               <button 
                 type="submit" 
-                className={`text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-all ${type === 'expense' ? 'bg-red-600 shadow-red-600/20' : 'bg-green-600 shadow-green-600/20'}`}
+                className={`text-white font-bold py-2.5 px-8 rounded-2xl shadow-xl transition-all active:scale-[0.98] ${type === 'expense' ? 'bg-[#EF233C] shadow-red-600/30 hover:bg-red-600' : 'bg-[#00B44A] shadow-green-600/30 hover:bg-green-600'}`}
               >
                 {isEditing ? 'Save Changes' : `Add ${type === 'expense' ? 'Expense' : 'Income'}`}
               </button>
