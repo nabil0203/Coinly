@@ -272,18 +272,18 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
           >
             <table className="w-full min-w-max border-collapse border-b border-slate-800 text-xs md:text-[13px] bg-white">
               <thead className="sticky top-0 z-40 bg-white shadow-sm ring-1 ring-slate-800">
-                <tr className="divide-x divide-slate-400 border-b border-slate-800">
-                  <th className="sticky left-0 z-50 bg-white border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold">Date</th>
-                  <th className="bg-[#4CE0D2] px-1 py-0.5 md:px-1 md:py-0.5 text-left font-bold text-black border-r border-slate-400">Expense Details</th>
+                <tr className="divide-x divide-slate-400 border-b border-slate-800 text-sm md:text-[15px]">
+                  <th className="sticky left-0 z-50 bg-white border-r border-slate-800 px-1 py-3 md:px-1 md:py-4 text-center font-bold">Date</th>
+                  <th className="bg-[#4CE0D2] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400">Expense Details</th>
                   {allMethods.map(m => (
-                    <th key={`ex-h-${m}`} className="bg-[#4CE0D2] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold text-black border-r border-slate-400 whitespace-nowrap">{m}</th>
+                    <th key={`ex-h-${m}`} className="bg-[#4CE0D2] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400 whitespace-nowrap">{m}</th>
                   ))}
-                  <th className="bg-[#7895CB] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold text-black border-r border-slate-800">Total Cost</th>
-                  <th className="bg-[#F4D160] px-1 py-0.5 md:px-1 md:py-0.5 text-left font-bold text-black border-r border-slate-400">Cash In Details</th>
+                  <th className="bg-[#7895CB] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-800">Total Cost</th>
+                  <th className="bg-[#F4D160] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400">Cash In Details</th>
                   {allMethods.map(m => (
-                    <th key={`in-h-${m}`} className="bg-[#F4D160] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold text-black border-r border-slate-400 whitespace-nowrap">{m}</th>
+                    <th key={`in-h-${m}`} className="bg-[#F4D160] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400 whitespace-nowrap">{m}</th>
                   ))}
-                  <th className="bg-[#7895CB] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold text-black border-r border-slate-800 text-white !text-black">Total Balance</th>
+                  <th className="bg-[#7895CB] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-800 text-white !text-black">Total Balance</th>
                 </tr>
               </thead>
               <tbody>
@@ -317,7 +317,7 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
                       </td>
                     ))}
                     {r.isFirst ? (
-                      <td rowSpan={r.rowCount} className="bg-[#E8EDF5] border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle text-slate-800">
+                      <td rowSpan={r.rowCount} className="bg-[#E8EDF5] border-r-[4px] border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle text-slate-800">
                         {r.dailyExpenseTotal > 0 ? r.dailyExpenseTotal.toLocaleString() : '0'}
                       </td>
                     ) : (

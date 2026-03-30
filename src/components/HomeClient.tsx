@@ -73,7 +73,7 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
                 </svg>
               </div>
               <div className="mt-3 lg:mt-0 lg:ml-6">
-                <h3 className="text-sm lg:text-xl font-bold text-slate-800 leading-tight">Add Expense</h3>
+                <h3 className="text-sm lg:text-xl font-bold text-slate-800 leading-tight">Expense</h3>
                 <p className="hidden lg:block text-sm text-slate-500 mt-1">Log a new payment</p>
               </div>
             </button>
@@ -88,7 +88,7 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
                 </svg>
               </div>
               <div className="mt-3 lg:mt-0 lg:ml-6">
-                <h3 className="text-sm lg:text-xl font-bold text-slate-800 leading-tight">Add Income</h3>
+                <h3 className="text-sm lg:text-xl font-bold text-slate-800 leading-tight">Cash In</h3>
                 <p className="hidden lg:block text-sm text-slate-500 mt-1">Record salary/cash</p>
               </div>
             </button>
