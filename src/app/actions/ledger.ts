@@ -14,6 +14,7 @@ export async function getEntries(month: number, year: number) {
   const startOfMonth = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   const endOfMonth = `${year}-${String(month + 1).padStart(2, '0')}-31`;
 
+  // Fetch entries for the current month view
   const entries = await Entry.find({
     user: user.userId,
     date: { $gte: startOfMonth, $lte: endOfMonth }
@@ -37,17 +38,40 @@ export async function getEntries(month: number, year: number) {
     });
   });
 
-  // Calculate previous balance (all entries before start of month)
-  const prevEntries = await Entry.find({
-    user: user.userId,
-    date: { $lt: startOfMonth }
-  }).lean();
+  // 1. Get current total balance of all payment methods
+  const methods = await PaymentMethod.find({ user: user.userId }).lean();
+  const totalCurrentBalance = methods.reduce((acc: number, m: any) => acc + (Number(m.balance) || 0), 0);
 
-  let prevBalance = 0;
-  prevEntries.forEach((e: any) => {
-    if (e.type === 'cashin') prevBalance += e.amount;
-    else prevBalance -= e.amount;
+  // 2. Calculate net sum of entries from startOfMonth until now (infinity)
+  // We fetch ALL entries for the user to be safe with date normalization
+  const allUserEntries = await Entry.find({ user: user.userId }).lean();
+
+  const normalizeDate = (d: string) => {
+    const parts = d.split('-');
+    if (parts.length !== 3) return d;
+    return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+  };
+
+  const normalizedStart = normalizeDate(startOfMonth);
+  let futureNet = 0;
+
+  allUserEntries.forEach((e: any) => {
+    const amt = Number(e.amount) || 0;
+    const normalizedEntryDate = normalizeDate(e.date);
+    
+    // Sum everything from the start of the viewed month onwards
+    if (normalizedEntryDate >= normalizedStart) {
+      if (e.type === 'cashin') futureNet += amt;
+      else futureNet -= amt;
+    }
   });
+
+  const prevBalance = totalCurrentBalance - futureNet;
+  
+  console.log(`[getEntries Debug] month=${month}, year=${year}`);
+  console.log(`[getEntries Debug] totalCurrentBalance=${totalCurrentBalance}`);
+  console.log(`[getEntries Debug] futureNet=${futureNet}`);
+  console.log(`[getEntries Debug] prevBalance=${prevBalance}`);
 
   return { ...grouped, prevBalance };
 }
