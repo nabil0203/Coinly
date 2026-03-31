@@ -39,7 +39,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-4xl font-black text-slate-800 tracking-tight">Coinly</h1>
         </div>
-        <p className="text-slate-400 font-medium mb-10">Welcome Back<br/>Sign in to manage your finances</p>
+        <p className="text-slate-400 font-medium mb-10">Welcome Back</p>
         
         {error && (
           <div className="mb-6 p-4 rounded-2xl bg-red-50 text-red-600 border border-red-100 text-sm font-bold animate-in shake-in duration-300">
