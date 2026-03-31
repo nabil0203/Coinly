@@ -6,3 +6,5 @@ declare global {
     promise: Promise<Mongoose> | null;
   };
 }
+
+export {};

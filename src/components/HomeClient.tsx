@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { PaymentMethodsGrid } from './FinancialSummary';
 import { EntryModal } from './EntryModal';
 import Link from 'next/link';
-import { addEntry, updateEntry, deleteEntry } from '@/app/actions/ledger';
+import { addEntry } from '@/app/actions/ledger';
 
 interface HomeClientProps {
   displayName: string;

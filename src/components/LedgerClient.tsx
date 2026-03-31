@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { EntryModal } from './EntryModal';
 import { addEntry, updateEntry, deleteEntry } from '@/app/actions/ledger';
-import { getMethodIcon } from '@/utils/icons';
 
 interface LedgerClientProps {
   initialData: {

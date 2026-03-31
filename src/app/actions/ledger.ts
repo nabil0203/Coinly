@@ -68,10 +68,6 @@ export async function getEntries(month: number, year: number) {
 
   const prevBalance = totalCurrentBalance - futureNet;
   
-  console.log(`[getEntries Debug] month=${month}, year=${year}`);
-  console.log(`[getEntries Debug] totalCurrentBalance=${totalCurrentBalance}`);
-  console.log(`[getEntries Debug] futureNet=${futureNet}`);
-  console.log(`[getEntries Debug] prevBalance=${prevBalance}`);
 
   return { ...grouped, prevBalance };
 }

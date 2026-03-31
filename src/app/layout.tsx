@@ -15,19 +15,20 @@ const poppins = Poppins({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  title: "Coinly",
-  description: "Track your expenses, income, and manage your wealth.",
-};
+export const metadata = {
+  title: 'Coinly',
+  description: 'Money Tracker App',
+}
+
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable} h-full antialiased`}>
-      <body className="h-full flex flex-col font-sans">
+    <html lang="en" className={`${inter.variable} ${poppins.variable} antialiased`} suppressHydrationWarning>
+      <body className="font-sans">
         {children}
       </body>
     </html>
