@@ -15,7 +15,7 @@ const poppins = Poppins({
   display: 'swap',
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Coinly',
   description: 'Money Tracker App',
 }

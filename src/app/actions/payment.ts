@@ -30,23 +30,7 @@ export async function addPaymentMethod(name: string, balance: number = 0) {
   return JSON.parse(JSON.stringify(method));
 }
 
-export async function updatePaymentMethodBalance(name: string, amount: number, isAddition: boolean) {
-  await dbConnect();
-  const user = await getCurrentUser();
-  if (!user) throw new Error('Unauthorized');
 
-  const method = await PaymentMethod.findOne({ name, user: user.userId });
-  if (!method) throw new Error('Payment method not found');
-
-  if (isAddition) {
-    method.balance += amount;
-  } else {
-    method.balance -= amount;
-  }
-
-  await method.save();
-  revalidatePath('/');
-}
 
 export async function deletePaymentMethod(id: string) {
   await dbConnect();

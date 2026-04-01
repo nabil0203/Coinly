@@ -53,8 +53,8 @@ export async function registerAction(formData: FormData) {
     await setAuthCookie(token);
 
     return { success: true };
-  } catch (error: any) {
-    return { error: error.message || 'Registration failed' };
+  } catch (error: unknown) {
+    return { error: (error as Error).message || 'Registration failed' };
   }
 }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getIOUContacts, createOrUpdateContact } from '@/app/actions/iou';
+import { type EntryPayload } from '@/app/actions/ledger';
 
 interface Entry {
   description: string;
@@ -12,15 +13,30 @@ interface Entry {
   iou_details?: string;
 }
 
+interface EditingEntry {
+  _id?: string;
+  description?: string;
+  amount?: number | string;
+  payment_method?: string;
+  is_iou?: boolean;
+  date?: string;
+  iou_details?: {
+    contact?: string;
+    iou_type?: 'debt' | 'receivable';
+    iou_action?: 'create' | 'repay';
+    details?: string;
+  };
+}
+
 interface EntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (type: 'expense' | 'cashin', payload: any, id?: string) => void;
+  onSubmit: (type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[], id?: string) => void;
   onDelete?: (type: 'expense' | 'cashin', id: string) => void;
   type: 'expense' | 'cashin';
   dateStr: string;
-  paymentMethods: any[];
-  editEntry?: any;
+  paymentMethods: { _id?: string; id?: string; name: string; balance: number }[];
+  editEntry?: EditingEntry | null;
 }
 
 export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr, paymentMethods, editEntry = null }: EntryModalProps) {
@@ -35,7 +51,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
     iou_details: ''
   }]);
   const [selectedDate, setSelectedDate] = useState(dateStr);
-  const [iouContacts, setIouContacts] = useState<any[]>([]);
+  const [iouContacts, setIouContacts] = useState<Record<string, unknown>[]>([]);
   const [newContactName, setNewContactName] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
 
@@ -48,7 +64,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
       // Fetch fresh contacts and clear any stale selections pointing to deleted contacts
       getIOUContacts().then(freshContacts => {
         setIouContacts(freshContacts);
-        const validIds = new Set(freshContacts.map((c: any) => c._id));
+        const validIds = new Set(freshContacts.map((c: Record<string, unknown>) => c._id));
         setEntries(prev => prev.map(e =>
           e.iou_contact_id && !validIds.has(e.iou_contact_id)
             ? { ...e, iou_contact_id: '' }
@@ -56,7 +72,8 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
         ));
       });
 
-      if (isEditing) {
+      if (isEditing && editEntry) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEntries([{
           description: editEntry.description || '',
           amount: String(editEntry.amount || ''),
@@ -138,8 +155,8 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
       if (entries.length === 1) {
         handleEntryChange(0, { iou_contact_id: contact._id });
       }
-    } catch (error: any) {
-      alert(`Failed to add contact: ${error.message || 'Unknown error'}`);
+    } catch (error: unknown) {
+      alert(`Failed to add contact: ${(error as Error).message || 'Unknown error'}`);
     }
   };
 
@@ -168,8 +185,8 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
       }
     }
 
-    const mapEntryToPayload = (entry: Entry) => {
-        const payload: any = {
+    const mapEntryToPayload = (entry: Entry): EntryPayload => {
+        const payload: EntryPayload = {
             date: selectedDate,
             description: entry.description,
             amount: parseInt(entry.amount, 10),
@@ -179,8 +196,8 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
         if (entry.is_iou && entry.iou_contact_id) {
             payload.iou = {
                 contactId: entry.iou_contact_id,
-                iouType: entry.iou_type,
-                iouAction: entry.iou_action,
+                iouType: entry.iou_type || (type === 'expense' ? 'receivable' : 'debt'),
+                iouAction: entry.iou_action || 'create',
                 details: entry.iou_details
             };
         }
@@ -188,7 +205,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
         return payload;
     };
 
-    if (isEditing) {
+    if (isEditing && editEntry?._id) {
       onSubmit(type, mapEntryToPayload(entries[0]), editEntry._id);
     } else {
       const payloads = entries.map((entry: Entry) => mapEntryToPayload(entry));
@@ -197,14 +214,14 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
   };
 
   const handleDelete = () => {
-    if (onDelete && window.confirm('Delete this entry?')) {
+    if (onDelete && editEntry?._id && window.confirm('Delete this entry?')) {
       onDelete(type, editEntry._id);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-      <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-xl' : 'max-w-3xl'} w-full max-h-[90vh] flex flex-col transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
+      <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-xl' : 'max-w-3xl'} w-full max-h-[90vh] flex flex-col overflow-hidden transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
         
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
@@ -290,7 +307,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                       value={entry.payment_method} 
                       onChange={e => handleEntryChange(index, { payment_method: e.target.value })}
                     >
-                      {paymentMethods.length > 0 ? paymentMethods.map((pm: any) => (
+                      {paymentMethods.length > 0 ? paymentMethods.map((pm: { name: string; balance: number; _id?: string; id?: string }) => (
                         <option key={pm._id || pm.id} value={pm.name}>{pm.name}</option>
                       )) : (
                         <>
@@ -358,8 +375,8 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                                     >
                                         <option value="">Select Person</option>
                                         {iouContacts
-                                          .filter((c: any) => (c.total_receivable > 0 || c.total_debt > 0 || c._id === entry.iou_contact_id))
-                                          .map((contact: any) => (
+                                          .filter((c: { total_receivable?: number; total_debt?: number; _id?: string }) => (c.total_receivable! > 0 || c.total_debt! > 0 || c._id === entry.iou_contact_id))
+                                          .map((contact: { _id?: string; name?: string }) => (
                                             <option key={contact._id} value={contact._id}>{contact.name}</option>
                                         ))}
                                     </select>
@@ -372,8 +389,8 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                                         onChange={e => {
                                             const [iType, iAction] = e.target.value.split('_');
                                             handleEntryChange(index, { 
-                                                iou_type: iType as any, 
-                                                iou_action: iAction as any 
+                                                iou_type: iType as 'debt' | 'receivable', 
+                                                iou_action: iAction as 'create' | 'repay' 
                                             });
                                         }}
                                         required={entry.is_iou}
@@ -431,7 +448,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
               <button 
                 type="button" 
                 onClick={handleDelete}
-                className="bg-[#EF233C] text-white font-bold py-2.5 px-5 rounded-xl text-sm flex items-center gap-2 hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 active:scale-[0.98]"
+                className="bg-[#EF233C] text-white font-bold py-2.5 px-5 rounded-2xl text-sm flex items-center gap-2 hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 active:scale-[0.98]"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -444,7 +461,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
               <button 
                 type="button" 
                 onClick={onClose} 
-                className="text-slate-500 font-bold py-2 px-4 rounded-lg hover:bg-slate-200/50 transition-all"
+                className="text-slate-500 font-bold py-2.5 px-6 rounded-2xl hover:bg-slate-200/50 transition-all"
               >
                 Cancel
               </button>

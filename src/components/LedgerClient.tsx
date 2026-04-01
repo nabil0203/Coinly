@@ -1,20 +1,43 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { EntryModal } from './EntryModal';
-import { addEntry, updateEntry, deleteEntry } from '@/app/actions/ledger';
+import { addEntry, updateEntry, deleteEntry, type EntryPayload } from '@/app/actions/ledger';
+
+interface LedgerEntry {
+  _id?: string;
+  description: string;
+  amount: number | string;
+  payment_method: string;
+}
 
 interface LedgerClientProps {
   initialData: {
-    expenses: any;
-    cashin: any;
+    expenses: Record<string, LedgerEntry[]>;
+    cashin: Record<string, LedgerEntry[]>;
     prevBalance: number;
   };
-  paymentMethods: any[];
+  paymentMethods: { _id?: string; id?: string; name: string; balance: number }[];
   initialMonth: number;
   initialYear: number;
+}
+
+
+interface LedgerRow {
+  isFirst: boolean;
+  isLast: boolean;
+  colorGroup: string;
+  day: number;
+  dayName: string;
+  dateStr: string;
+  rowCount: number;
+  exp: LedgerEntry | null;
+  inc: LedgerEntry | null;
+  currentBalance: number;
+  dailyExpenseTotal?: number;
+  dayEndBalance?: number;
+  index: number;
 }
 
 const getDaysInMonth = (year: number, month: number) => {
@@ -29,13 +52,16 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'expense' | 'cashin'>('expense');
   const [targetDate, setTargetDate] = useState('');
-  const [editEntry, setEditEntry] = useState<any>(null);
+  const [editEntry, setEditEntry] = useState<LedgerEntry | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState(`${initialYear}-${initialMonth}`);
+
+  if (`${initialYear}-${initialMonth}` !== prevInitial) {
+    setPrevInitial(`${initialYear}-${initialMonth}`);
     setCurrentDate(new Date(initialYear, initialMonth, 1));
-  }, [initialMonth, initialYear]);
+  }
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -68,10 +94,10 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
   const historicalMethods = new Set<string>();
 
   if (initialData.expenses) {
-    Object.values(initialData.expenses).flat().forEach((e: any) => historicalMethods.add(e.payment_method));
+    Object.values(initialData.expenses).flat().forEach((e: LedgerEntry) => historicalMethods.add(e.payment_method));
   }
   if (initialData.cashin) {
-    Object.values(initialData.cashin).flat().forEach((c: any) => historicalMethods.add(c.payment_method));
+    Object.values(initialData.cashin).flat().forEach((c: LedgerEntry) => historicalMethods.add(c.payment_method));
   }
 
   const allMethodsSet = new Set([...activeMethods, ...historicalMethods]);
@@ -83,10 +109,10 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
     return a.localeCompare(b);
   });
 
-  let rows: any[] = [];
+  const rows: LedgerRow[] = [];
   let runningBalance = Number(initialData.prevBalance);
 
-  let totals = {
+  const totals = {
     exMethods: {} as Record<string, number>,
     inMethods: {} as Record<string, number>,
     exAll: 0,
@@ -149,34 +175,38 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
     colorGroup++;
 
     if (rows.length > 0) {
-      rows[rows.length - rowCount].dailyExpenseTotal = dailyExpenseTotal;
-      rows[rows.length - rowCount].dayEndBalance = runningBalance;
+      const targetRow = rows[rows.length - rowCount];
+      if (targetRow) {
+        targetRow.dailyExpenseTotal = dailyExpenseTotal;
+        targetRow.dayEndBalance = runningBalance;
+      }
     }
   }
 
   totals.runningBalance = runningBalance;
 
-  const handleScroll = (e: any) => {
-    setIsScrolled(e.target.scrollLeft > 10);
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setIsScrolled((e.target as HTMLDivElement).scrollLeft > 10);
   };
 
-  const openModal = (type: 'expense' | 'cashin', date: string, entry: any = null) => {
+  const openModal = (type: 'expense' | 'cashin', date: string, entry: LedgerEntry | null = null) => {
     setModalType(type);
     setTargetDate(date);
     setEditEntry(entry);
     setModalOpen(true);
   };
 
-  const handleEntrySubmit = async (type: 'expense' | 'cashin', payload: any, id?: string) => {
+  const handleEntrySubmit = async (type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[], id?: string) => {
     if (id) {
-      await updateEntry(type, id, payload);
+      const singlePayload = Array.isArray(payload) ? payload[0] : payload;
+      await updateEntry(type, id, singlePayload);
     } else {
       await addEntry(type, payload);
     }
     setModalOpen(false);
 
-    const firstPayload = Array.isArray(payload) ? payload[0] : payload;
-    if (firstPayload?.date) {
+    const firstPayload = Array.isArray(payload) ? payload[0] : (payload as EntryPayload);
+    if (firstPayload?.date && typeof firstPayload.date === 'string') {
       const parts = firstPayload.date.split('-');
       if (parts.length >= 2) {
         const pYear = parseInt(parts[0], 10);
@@ -317,7 +347,7 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
                     ))}
                     {r.isFirst ? (
                       <td rowSpan={r.rowCount} className="bg-[#E8EDF5] border-r-[4px] border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle text-slate-800">
-                        {r.dailyExpenseTotal > 0 ? r.dailyExpenseTotal.toLocaleString() : '0'}
+                        {(r.dailyExpenseTotal || 0) > 0 ? (r.dailyExpenseTotal || 0).toLocaleString() : '0'}
                       </td>
                     ) : (
                       <td className="hidden"></td>
@@ -340,8 +370,8 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
                       </td>
                     ))}
                     {r.isFirst ? (
-                      <td rowSpan={r.rowCount} className={`bg-[#E8EDF5] border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle ${r.dayEndBalance < 0 ? 'text-red-600' : 'text-slate-800'}`}>
-                        {r.dayEndBalance.toLocaleString()}
+                      <td rowSpan={r.rowCount} className={`bg-[#E8EDF5] border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle ${(r.dayEndBalance || 0) < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                        {(r.dayEndBalance || 0).toLocaleString()}
                       </td>
                     ) : (
                       <td className="hidden"></td>
@@ -352,67 +382,69 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
             </table>
           </div>
         ) : (
-          <div className="h-full overflow-y-auto px-4 py-4 space-y-4">
-            {Array.from(new Set(rows.filter(r => r.exp || r.inc).map(r => r.day))).map(dayNum => {
-              const dayRows = rows.filter(r => r.day === dayNum && (r.exp || r.inc));
-              const first = dayRows[0];
-              const last = dayRows[dayRows.length - 1];
-
-              return (
-                <div key={`card-${dayNum}`} className="ledger-card !mb-0">
-                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 bg-fintech-primary text-white rounded-lg flex items-center justify-center font-bold text-sm">
-                        {first.day}
-                      </span>
-                      <div>
-                        <div className="text-xs font-bold text-fintech-text-main">{first.dayName}</div>
-                        <div className="text-[10px] text-fintech-text-muted">{String(first.day).padStart(2, '0')} {monthName.substring(0, 3)} {year}</div>
+          <div className="h-full overflow-y-auto w-full flex justify-center px-4 py-4">
+            <div className="space-y-4 max-w-xl w-full">
+              {Array.from(new Set(rows.filter(r => r.exp || r.inc).map(r => r.day))).map(dayNum => {
+                const dayRows = rows.filter(r => r.day === dayNum && (r.exp || r.inc));
+                const first = dayRows[0];
+                const last = dayRows[dayRows.length - 1];
+  
+                return (
+                  <div key={`card-${dayNum}`} className="ledger-card !mb-0">
+                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <span className="w-8 h-8 bg-fintech-primary text-white rounded-lg flex items-center justify-center font-bold text-sm">
+                          {first.day}
+                        </span>
+                        <div>
+                          <div className="text-xs font-bold text-fintech-text-main">{first.dayName}</div>
+                          <div className="text-[10px] text-fintech-text-muted">{String(first.day).padStart(2, '0')} {monthName.substring(0, 3)} {year}</div>
+                        </div>
+                      </div>
+                      <div className={`text-sm font-black ${last.currentBalance < 0 ? 'text-red-600' : 'text-fintech-primary'}`}>
+                        ৳ {last.currentBalance.toLocaleString()}
                       </div>
                     </div>
-                    <div className={`text-sm font-black ${last.currentBalance < 0 ? 'text-red-600' : 'text-fintech-primary'}`}>
-                      ৳ {last.currentBalance.toLocaleString()}
+  
+                    <div className="space-y-2">
+                      {dayRows.map((r, idx) => (
+                        <React.Fragment key={`entry-${idx}`}>
+                          {r.exp && (
+                            <div className="bg-red-50/30 p-2 rounded-lg border border-red-50 cursor-pointer" onClick={() => openModal('expense', r.dateStr, r.exp)}>
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="card-label !text-red-500 text-[9px]">Expense</div>
+                                  <div className="text-sm font-medium text-fintech-text-main">{r.exp.description}</div>
+                                  <div className="text-[10px] text-fintech-text-muted">{r.exp.payment_method}</div>
+                                </div>
+                                <div className="text-sm font-bold text-fintech-expense-text">
+                                  - ৳ {Number(r.exp.amount).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+  
+                          {r.inc && (
+                            <div className="bg-green-50/30 p-2 rounded-lg border border-green-50 cursor-pointer" onClick={() => openModal('cashin', r.dateStr, r.inc)}>
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="card-label !text-green-500 text-[9px]">Income</div>
+                                  <div className="text-sm font-medium text-fintech-text-main">{r.inc.description}</div>
+                                  <div className="text-[10px] text-fintech-text-muted">{r.inc.payment_method}</div>
+                                </div>
+                                <div className="text-sm font-bold text-fintech-income-text">
+                                  + ৳ {Number(r.inc.amount).toLocaleString()}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    {dayRows.map((r, idx) => (
-                      <React.Fragment key={`entry-${idx}`}>
-                        {r.exp && (
-                          <div className="bg-red-50/30 p-2 rounded-lg border border-red-50 cursor-pointer" onClick={() => openModal('expense', r.dateStr, r.exp)}>
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="card-label !text-red-500 text-[9px]">Expense</div>
-                                <div className="text-sm font-medium text-fintech-text-main">{r.exp.description}</div>
-                                <div className="text-[10px] text-fintech-text-muted">{r.exp.payment_method}</div>
-                              </div>
-                              <div className="text-sm font-bold text-fintech-expense-text">
-                                - ৳ {Number(r.exp.amount).toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {r.inc && (
-                          <div className="bg-green-50/30 p-2 rounded-lg border border-green-50 cursor-pointer" onClick={() => openModal('cashin', r.dateStr, r.inc)}>
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="card-label !text-green-500 text-[9px]">Income</div>
-                                <div className="text-sm font-medium text-fintech-text-main">{r.inc.description}</div>
-                                <div className="text-[10px] text-fintech-text-muted">{r.inc.payment_method}</div>
-                              </div>
-                              <div className="text-sm font-bold text-fintech-income-text">
-                                + ৳ {Number(r.inc.amount).toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

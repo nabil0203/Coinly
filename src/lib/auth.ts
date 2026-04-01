@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-it-in-prod';
 
-export interface AuthUser {
+interface AuthUser {
   userId: string;
   username: string;
 }
@@ -12,10 +12,10 @@ export async function signToken(payload: AuthUser) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 }
 
-export async function verifyToken(token: string): Promise<AuthUser | null> {
+async function verifyToken(token: string): Promise<AuthUser | null> {
   try {
     return jwt.verify(token, JWT_SECRET) as AuthUser;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -31,7 +31,7 @@ export async function setAuthCookie(token: string) {
   });
 }
 
-export async function getAuthToken() {
+async function getAuthToken() {
   const cookieStore = await cookies();
   return cookieStore.get('coinly_token')?.value;
 }

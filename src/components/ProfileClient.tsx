@@ -4,12 +4,23 @@ import React, { useState } from 'react';
 import { getMethodIcon } from '@/utils/icons';
 import { addPaymentMethod, deletePaymentMethod, renamePaymentMethod } from '@/app/actions/payment';
 import { updateProfileAction } from '@/app/actions/profile';
-import { logoutAction } from '@/app/actions/auth';
-import Link from 'next/link';
+
+interface ProfileUser {
+  full_name?: string;
+  username?: string;
+  email?: string;
+}
+
+interface PaymentMethodType {
+  _id?: string;
+  id?: string;
+  name: string;
+  balance: number;
+}
 
 interface ProfileClientProps {
-  user: any;
-  paymentMethods: any[];
+  user: ProfileUser;
+  paymentMethods: PaymentMethodType[];
 }
 
 export function ProfileClient({ user, paymentMethods }: ProfileClientProps) {
@@ -250,7 +261,7 @@ export function ProfileClient({ user, paymentMethods }: ProfileClientProps) {
                       onChange={e => setEditMethodName(e.target.value)}
                       autoFocus
                     />
-                    <button onClick={() => handleRenameMethod(pm._id || pm.id)} className="text-green-600 font-bold text-xs">OK</button>
+                    <button onClick={() => handleRenameMethod((pm._id || pm.id) as string)} className="text-green-600 font-bold text-xs">OK</button>
                   </div>
                 ) : (
                   <h4 className="font-black text-fintech-text-main text-base md:text-lg truncate font-poppins">{pm.name}</h4>
@@ -262,7 +273,7 @@ export function ProfileClient({ user, paymentMethods }: ProfileClientProps) {
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 flex gap-2 transition-all">
                 <button 
                   onClick={() => {
-                    setEditingMethodId(pm._id || pm.id);
+                    setEditingMethodId((pm._id || pm.id) as string);
                     setEditMethodName(pm.name);
                   }}
                   className="p-1.5 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg"
@@ -272,7 +283,7 @@ export function ProfileClient({ user, paymentMethods }: ProfileClientProps) {
                   </svg>
                 </button>
                 <button 
-                  onClick={() => handleDeleteMethod(pm._id || pm.id)}
+                  onClick={() => handleDeleteMethod((pm._id || pm.id) as string)}
                   className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

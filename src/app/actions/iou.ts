@@ -16,9 +16,9 @@ export async function getIOUContacts() {
 
   // Auto-backfill primary_type for pre-existing contacts that don't have it set yet.
   // This helps identify which section settled contacts belong to.
-  const needsBackfill = contacts.filter((c: any) => !c.primary_type);
+  const needsBackfill = contacts.filter((c: { primary_type?: string }) => !c.primary_type);
   if (needsBackfill.length > 0) {
-    await Promise.all(needsBackfill.map(async (contact: any) => {
+    await Promise.all(needsBackfill.map(async (contact: { _id?: string; primary_type?: string; save: () => Promise<void> }) => {
       const tx = await IOUTransaction.findOne({ contact: contact._id, user: user.userId }).sort({ date: 1, createdAt: 1 });
       if (tx) {
         contact.primary_type = tx.iou_type;
@@ -53,9 +53,9 @@ export async function createOrUpdateContact(name: string) {
       contact = await IOUContact.create({ name, user: user.userId });
     }
     return JSON.parse(JSON.stringify(contact));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating contact:', error);
-    throw new Error(error.message || 'Unknown error occurred while adding contact');
+    throw new Error((error as Error).message || 'Unknown error occurred while adding contact');
   }
 }
 export async function deleteIOUContact(contactId: string) {
@@ -66,7 +66,7 @@ export async function deleteIOUContact(contactId: string) {
 
     // Delete all transactions first
     const transactions = await IOUTransaction.find({ contact: contactId, user: user.userId });
-    const entryIds = transactions.map((t: any) => t.entry);
+    const entryIds = transactions.map((t: { entry?: string }) => t.entry);
 
     // Disassociate ledger entries (optional but cleaner)
     await Entry.updateMany(
@@ -81,8 +81,8 @@ export async function deleteIOUContact(contactId: string) {
     revalidatePath('/', 'layout'); // Invalidates all routes so EntryModal contact lists refresh everywhere
     
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting contact:', error);
-    throw new Error(error.message || 'Failed to delete contact');
+    throw new Error((error as Error).message || 'Failed to delete contact');
   }
 }

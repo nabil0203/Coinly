@@ -4,9 +4,25 @@ import React, { useState } from 'react';
 import { getContactHistory, deleteIOUContact } from '@/app/actions/iou';
 import { deleteEntry } from '@/app/actions/ledger';
 
+interface IOUContact {
+  _id: string;
+  name: string;
+  total_receivable: number;
+  total_debt: number;
+}
+
 interface IOUContactCardProps {
-  contact: any;
+  contact: IOUContact;
   iouType: 'receivable' | 'debt';
+}
+
+interface Transaction {
+  _id: string;
+  iou_action: string;
+  amount: number;
+  details?: string;
+  date: string;
+  entry?: { _id?: string; type?: string; payment_method?: string } | string | null;
 }
 
 import { useRouter } from 'next/navigation';
@@ -23,7 +39,7 @@ const formatDate = (dateString: string) => {
 export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
 
   const [isExpanded, setIsExpanded] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -45,14 +61,14 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
     }
   };
 
-  const handleDelete = async (tx: any) => {
+  const handleDelete = async (tx: Transaction) => {
     if (!confirm('Are you sure you want to delete this transaction record?')) {
       return;
     }
 
     // Fallback in case entry is not populated (string)
-    const entryId = tx.entry?._id || (typeof tx.entry === 'string' ? tx.entry : null);
-    const entryType = tx.entry?.type;
+    const entryId = typeof tx.entry === 'object' && tx.entry !== null ? tx.entry._id : (typeof tx.entry === 'string' ? tx.entry : null);
+    const entryType = typeof tx.entry === 'object' && tx.entry !== null ? tx.entry.type : null;
 
     if (!entryId) {
       alert('Cannot delete this record: associated ledger entry not found.');
@@ -60,20 +76,18 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
     }
 
     try {
-      // If type is missing, we try 'expense' as a reasonable guess for deletion logic
-      await deleteEntry(entryType || 'expense', entryId);
+      await deleteEntry((entryType as 'expense' | 'cashin') || 'expense', entryId);
 
       const data = await getContactHistory(contact._id);
       setHistory(data);
       router.refresh();
-    } catch (err: any) {
-      alert(`Failed to delete transaction: ${err.message || 'Unknown error'}`);
+    } catch (err: unknown) {
+      alert(`Failed to delete transaction: ${(err as Error).message || 'Unknown error'}`);
     }
   };
 
   const currentBalance = iouType === 'receivable' ? contact.total_receivable : contact.total_debt;
   const labelColor = iouType === 'receivable' ? 'text-green-600' : 'text-red-600';
-  const bgColor = iouType === 'receivable' ? 'bg-green-50/50' : 'bg-red-50/50';
 
   return (
     <div className={`rounded-3xl border border-fintech-border bg-white shadow-fintech-card overflow-hidden transition-all duration-300 ${isExpanded ? 'ring-2 ring-purple-500/20 shadow-xl' : 'hover:shadow-lg'}`}>
@@ -130,7 +144,7 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
               </div>
             ) : history.length > 0 ? (
               <div className="space-y-3">
-                {history.map((tx: any) => {
+                {history.map((tx: Transaction) => {
                   const isOutflow = (iouType === 'receivable' && tx.iou_action === 'create') || (iouType === 'debt' && tx.iou_action === 'repay');
                   const amountColor = isOutflow ? 'text-red-500' : 'text-blue-500';
                   const sign = isOutflow ? '-' : '+';
@@ -164,7 +178,7 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
                                <span className="text-[10px] sm:text-xs text-slate-600 font-bold whitespace-nowrap">
                                  {formatDate(tx.date)}
                                </span>
-                               {tx.entry?.payment_method && (
+                               {typeof tx.entry === 'object' && tx.entry?.payment_method && (
                                  <>
                                    <span className="text-[10px] text-slate-300">•</span>
                                    <span className="text-[9px] sm:text-[10px] text-slate-500 font-black uppercase tracking-tight">{tx.entry.payment_method}</span>

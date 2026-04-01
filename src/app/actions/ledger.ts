@@ -1,5 +1,6 @@
 'use server';
 
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 import Entry from '@/models/Entry';
 import PaymentMethod from '@/models/PaymentMethod';
@@ -8,8 +9,25 @@ import IOUTransaction from '@/models/IOUTransaction';
 import { getCurrentUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
+interface EntryDoc {
+  _id: string;
+  amount: number;
+  date: string;
+  user: string;
+  is_iou?: boolean;
+  payment_method: string;
+  type: string;
+}
+
+interface IOUData {
+  contactId: string;
+  iouType: string;
+  iouAction: string;
+  details?: string;
+}
+
 // Helper for IOU side-effects
-async function handleIOUEffect(entry: any, iouData: any, isReversal = false) {
+async function handleIOUEffect(entry: EntryDoc, iouData: IOUData, isReversal = false) {
   const { contactId, iouType, iouAction, details } = iouData;
   const contact = await IOUContact.findById(contactId);
   if (!contact) return;
@@ -56,7 +74,7 @@ export async function getEntries(month: number, year: number) {
   const endOfMonth = `${year}-${String(month + 1).padStart(2, '0')}-31`;
 
   // Fetch entries for the current month view
-  let entriesQuery = Entry.find({
+  const entriesQuery = Entry.find({
     user: user.userId,
     date: { $gte: startOfMonth, $lte: endOfMonth }
   })
@@ -65,12 +83,12 @@ export async function getEntries(month: number, year: number) {
 
   const entries = await entriesQuery.lean();
 
-  const grouped = {
-    expenses: {} as any,
-    cashin: {} as any,
+  const grouped: { expenses: Record<string, EntryDoc[]>; cashin: Record<string, EntryDoc[]> } = {
+    expenses: {},
+    cashin: {},
   };
 
-  entries.forEach((e: any) => {
+  entries.forEach((e: EntryDoc) => {
     const date = e.date;
     const typeKey = e.type === 'expense' ? 'expenses' : 'cashin';
     if (!grouped[typeKey][date]) {
@@ -81,7 +99,7 @@ export async function getEntries(month: number, year: number) {
 
   // 1. Get current total balance of all payment methods
   const methods = await PaymentMethod.find({ user: user.userId }).lean();
-  const totalCurrentBalance = methods.reduce((acc: number, m: any) => acc + (Number(m.balance) || 0), 0);
+  const totalCurrentBalance = methods.reduce((acc: number, m: { balance?: number }) => acc + (Number(m.balance) || 0), 0);
 
   // 2. Calculate net sum of entries from startOfMonth until now (infinity) using MongoDB Aggregation
   const normalizeDate = (d: string) => {
@@ -95,7 +113,7 @@ export async function getEntries(month: number, year: number) {
   const aggregationResult = await Entry.aggregate([
     {
       $match: {
-        user: user.userId,
+        user: new mongoose.Types.ObjectId(user.userId as string),
         // Using string comparison since dates are stored as YYYY-MM-DD
         date: { $gte: normalizedStart }
       }
@@ -123,7 +141,16 @@ export async function getEntries(month: number, year: number) {
   return JSON.parse(JSON.stringify({ ...grouped, prevBalance }));
 }
 
-export async function addEntry(type: 'expense' | 'cashin', payload: any | any[]) {
+export interface EntryPayload {
+  amount: number;
+  payment_method: string;
+  iou?: IOUData;
+  date?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+export async function addEntry(type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[]) {
   await dbConnect();
   const user = await getCurrentUser();
   if (!user) throw new Error('Unauthorized');
@@ -165,7 +192,7 @@ export async function addEntry(type: 'expense' | 'cashin', payload: any | any[])
   return { success: true };
 }
 
-export async function updateEntry(type: 'expense' | 'cashin', id: string, payload: any) {
+export async function updateEntry(type: 'expense' | 'cashin', id: string, payload: EntryPayload) {
   await dbConnect();
   const user = await getCurrentUser();
   if (!user) throw new Error('Unauthorized');

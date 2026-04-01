@@ -31,7 +31,7 @@ export async function updateProfileAction(data: {
     revalidatePath('/profile');
     revalidatePath('/'); // To update name in sidebar/home
     return { success: true };
-  } catch (error: any) {
-    return { error: error.message || 'Profile update failed' };
+  } catch (error: unknown) {
+    return { error: (error as Error).message || 'Profile update failed' };
   }
 }
