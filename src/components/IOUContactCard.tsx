@@ -11,7 +11,17 @@ interface IOUContactCardProps {
 
 import { useRouter } from 'next/navigation';
 
+const formatDate = (dateString: string) => {
+  const d = new Date(dateString);
+  const day = d.getDate().toString().padStart(2, '0');
+  const monthNames = ["Jan", "Feb", "Mar", "April", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
 export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -117,87 +127,73 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
             ) : history.length > 0 ? (
               <div className="space-y-3">
                 {history.map((tx: any) => (
-                  <div key={tx._id} className="bg-white border border-slate-100 rounded-[1.5rem] p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between shadow-sm hover:shadow-xl hover:border-purple-100 transition-all duration-300 group/row relative overflow-hidden">
-                    {/* Background Accent for better look */}
+                  <div key={tx._id} className="bg-white border border-slate-100 rounded-[1.25rem] p-3 sm:p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group/row relative overflow-hidden">
                     <div className={`absolute top-0 left-0 w-1 h-full ${tx.iou_action === 'create' ? 'bg-purple-500' : 'bg-green-500'} opacity-50`}></div>
-
-                    <div className="flex items-start sm:items-center gap-3 sm:gap-6 mb-3 sm:mb-0 flex-1">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${tx.iou_action === 'create' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}`}>
+                    
+                    <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${tx.iou_action === 'create' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}`}>
                         {tx.iou_action === 'create' ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                           </svg>
                         ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </div>
-
+                      
                       <div className="flex-1 min-w-0">
-                        {tx.details && (
-                          <div className="mb-1.5">
-                            <p className="text-base sm:text-lg md:text-xl font-black text-slate-800 leading-tight tracking-tight">
+                        <div className="flex flex-col gap-0.5 sm:gap-1">
+                          {tx.details && (
+                            <p className="text-sm sm:text-lg font-black text-slate-800 leading-tight tracking-tight truncate">
                               {tx.details}
                             </p>
-                          </div>
-                        )}
-
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200/50 shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <span className="text-sm text-slate-600 font-black whitespace-nowrap">
-                              {new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </span>
-                          </div>
-
-                          {tx.entry?.payment_method && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-xl border border-slate-100 shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                              </svg>
-                              <span className="text-[10px] text-slate-500 font-black uppercase tracking-tight">
-                                {tx.entry.payment_method}
-                              </span>
-                            </div>
                           )}
+                          <div className="flex items-center mt-1">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50/80 shadow-sm">
+                               <span className="text-[10px] sm:text-xs text-slate-600 font-bold whitespace-nowrap">
+                                 {formatDate(tx.date)}
+                               </span>
+                               {tx.entry?.payment_method && (
+                                 <>
+                                   <span className="text-[10px] text-slate-300">•</span>
+                                   <span className="text-[9px] sm:text-[10px] text-slate-500 font-black uppercase tracking-tight">{tx.entry.payment_method}</span>
+                                 </>
+                               )}
+                            </div>
+                          </div>
                         </div>
                       </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-0.5 sm:gap-1 ml-4 shrink-0">
+                      <span className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest ${tx.iou_action === 'create' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
+                        {iouType === 'receivable' 
+                          ? (tx.iou_action === 'create' ? 'Lent' : 'Returned')
+                          : (tx.iou_action === 'create' ? 'Loaned' : 'Paid Off')
+                        }
+                      </span>
+                      <p className={`text-base sm:text-2xl font-black tabular-nums transition-transform group-hover:scale-105 origin-right flex items-center gap-0.5 ${tx.iou_action === 'create' ? 'text-slate-900' : 'text-green-600'}`}>
+                        {tx.iou_action === 'repay' ? '-' : ''}
+                        <span className="text-sm sm:text-xl">৳</span> 
+                        {tx.amount.toLocaleString()}
+                      </p>
                     </div>
 
-                    <div className="flex items-center justify-center sm:justify-end gap-6 sm:pl-4 border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0 mt-1.5 sm:mt-0">
-                      <div className="text-center sm:text-right flex flex-col items-center sm:items-end w-full sm:w-auto">
-                        <div className="mb-2">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${tx.iou_action === 'create' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
-                            {iouType === 'receivable' 
-                              ? (tx.iou_action === 'create' ? 'Lent' : 'Returned')
-                              : (tx.iou_action === 'create' ? 'Loaned' : 'Paid Off')
-                            }
-                          </span>
-                        </div>
-                        <p className={`text-2xl font-black tabular-nums transition-transform group-hover:scale-105 origin-right flex items-center gap-1 ${tx.iou_action === 'create' ? 'text-slate-900' : 'text-green-600'}`}>
-                          {tx.iou_action === 'repay' ? '-' : ''}
-                          <span className="text-xl">৳</span> 
-                          {tx.amount.toLocaleString()}
-                        </p>
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(tx);
-                        }}
-                        className="absolute top-2 right-4 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover/row:opacity-100 border border-transparent hover:border-red-100"
-                        title="Delete Record"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(tx);
+                      }}
+                      className="absolute top-1 right-2 p-1.5 text-slate-300 hover:text-red-500 transition-all opacity-0 group-hover/row:opacity-100"
+                      title="Delete Record"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>
