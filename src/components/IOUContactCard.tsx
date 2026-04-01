@@ -87,7 +87,6 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
             <div className="px-2 py-0.5 bg-slate-100 rounded text-[9px] font-black text-slate-500 uppercase tracking-tight">
               {currentBalance === 0 ? 'Settled' : iouType === 'receivable' ? 'Active Collection' : 'Pending Debt'}
             </div>
-            <span className="text-[10px] text-slate-300 font-medium tracking-wide">• Click to view history</span>
           </div>
         </div>
         <div className="text-right flex items-center gap-3 sm:gap-4 shrink-0">
@@ -118,11 +117,11 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
             ) : history.length > 0 ? (
               <div className="space-y-3">
                 {history.map((tx: any) => (
-                  <div key={tx._id} className="bg-white border border-slate-100 rounded-[2rem] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between shadow-sm hover:shadow-xl hover:border-purple-100 transition-all duration-300 group/row relative overflow-hidden">
+                  <div key={tx._id} className="bg-white border border-slate-100 rounded-[1.5rem] p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between shadow-sm hover:shadow-xl hover:border-purple-100 transition-all duration-300 group/row relative overflow-hidden">
                     {/* Background Accent for better look */}
                     <div className={`absolute top-0 left-0 w-1 h-full ${tx.iou_action === 'create' ? 'bg-purple-500' : 'bg-green-500'} opacity-50`}></div>
 
-                    <div className="flex items-start sm:items-center gap-4 sm:gap-6 mb-4 sm:mb-0">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-6 mb-3 sm:mb-0 flex-1">
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${tx.iou_action === 'create' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}`}>
                         {tx.iou_action === 'create' ? (
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,15 +136,15 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
 
                       <div className="flex-1 min-w-0">
                         {tx.details && (
-                          <div className="mb-2">
-                            <p className="text-lg md:text-xl font-black text-slate-800 leading-tight tracking-tight">
+                          <div className="mb-1.5">
+                            <p className="text-base sm:text-lg md:text-xl font-black text-slate-800 leading-tight tracking-tight">
                               {tx.details}
                             </p>
                           </div>
                         )}
 
 
-                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200/50 shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -169,7 +168,7 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-center sm:justify-end gap-6 sm:pl-4 border-t sm:border-t-0 border-slate-50 pt-5 sm:pt-0 mt-2 sm:mt-0">
+                    <div className="flex items-center justify-center sm:justify-end gap-6 sm:pl-4 border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0 mt-1.5 sm:mt-0">
                       <div className="text-center sm:text-right flex flex-col items-center sm:items-end w-full sm:w-auto">
                         <div className="mb-2">
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${tx.iou_action === 'create' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
