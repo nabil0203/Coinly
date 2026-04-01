@@ -3,8 +3,49 @@
 import dbConnect from '@/lib/db';
 import Entry from '@/models/Entry';
 import PaymentMethod from '@/models/PaymentMethod';
+import IOUContact from '@/models/IOUContact';
+import IOUTransaction from '@/models/IOUTransaction';
 import { getCurrentUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+
+// Helper for IOU side-effects
+async function handleIOUEffect(entry: any, iouData: any, isReversal = false) {
+  const { contactId, iouType, iouAction, details } = iouData;
+  const contact = await IOUContact.findById(contactId);
+  if (!contact) return;
+
+  const multiplier = isReversal ? -1 : 1;
+  const amount = entry.amount * multiplier;
+
+  console.log(`[IOU] Applying effect: ${iouType} ${iouAction} reversal=${isReversal} name=${contact.name} amount=${amount}`);
+  if (iouType === 'receivable') {
+    contact.total_receivable += (iouAction === 'create' ? amount : -amount);
+  } else if (iouType === 'debt') {
+    contact.total_debt += (iouAction === 'create' ? amount : -amount);
+  }
+  // Lock in the primary section on the very first transaction
+  if (!contact.primary_type) {
+    contact.primary_type = iouType;
+  }
+  await contact.save();
+  console.log(`[IOU] Contact balance updated: receivable=${contact.total_receivable} debt=${contact.total_debt}`);
+
+  if (isReversal) {
+    const delResult = await IOUTransaction.deleteOne({ entry: entry._id });
+    console.log(`[IOU] Transaction deleted for entry ${entry._id}:`, delResult);
+  } else {
+    await IOUTransaction.create({
+      contact: contactId,
+      entry: entry._id,
+      iou_type: iouType,
+      iou_action: iouAction,
+      amount: entry.amount,
+      date: entry.date,
+      user: entry.user,
+      details: details // Save the extra details
+    });
+  }
+}
 
 export async function getEntries(month: number, year: number) {
   await dbConnect();
@@ -15,27 +56,40 @@ export async function getEntries(month: number, year: number) {
   const endOfMonth = `${year}-${String(month + 1).padStart(2, '0')}-31`;
 
   // Fetch entries for the current month view
-  const entries = await Entry.find({
+  let entriesQuery = Entry.find({
     user: user.userId,
     date: { $gte: startOfMonth, $lte: endOfMonth }
-  }).sort({ date: 1, createdAt: 1 }).lean();
+  }).sort({ date: 1, createdAt: 1 });
+
+  const entries = await entriesQuery.lean();
+
+  // Robust manual population for IOU Details to prevent StrictPopulateError crashes
+  // especially in development mode with schema lags.
+  const populatedEntries = await Promise.all(entries.map(async (e: any) => {
+    if (e.is_iou && e.iou_details) {
+      try {
+        const iouDetails = await IOUTransaction.findById(e.iou_details).lean();
+        return { ...e, iou_details: iouDetails };
+      } catch (err) {
+        console.error('[Ledger] Manual population error:', err);
+        return e;
+      }
+    }
+    return e;
+  }));
 
   const grouped = {
     expenses: {} as any,
     cashin: {} as any,
   };
 
-  entries.forEach((e: any) => {
+  populatedEntries.forEach((e: any) => {
     const date = e.date;
     const typeKey = e.type === 'expense' ? 'expenses' : 'cashin';
     if (!grouped[typeKey][date]) {
       grouped[typeKey][date] = [];
     }
-    grouped[typeKey][date].push({
-      ...e,
-      _id: e._id.toString(),
-      user: e.user.toString()
-    });
+    grouped[typeKey][date].push(e);
   });
 
   // 1. Get current total balance of all payment methods
@@ -69,7 +123,7 @@ export async function getEntries(month: number, year: number) {
   const prevBalance = totalCurrentBalance - futureNet;
   
 
-  return { ...grouped, prevBalance };
+  return JSON.parse(JSON.stringify({ ...grouped, prevBalance }));
 }
 
 export async function addEntry(type: 'expense' | 'cashin', payload: any | any[]) {
@@ -83,7 +137,8 @@ export async function addEntry(type: 'expense' | 'cashin', payload: any | any[])
     const entry = await Entry.create({
       ...p,
       type,
-      user: user.userId
+      user: user.userId,
+      is_iou: !!p.iou
     });
 
     // Update payment method balance
@@ -96,10 +151,20 @@ export async function addEntry(type: 'expense' | 'cashin', payload: any | any[])
       }
       await method.save();
     }
+
+    // Handle IOU logic
+    if (p.iou) {
+      await handleIOUEffect(entry, p.iou);
+      const iouTx = await IOUTransaction.findOne({ entry: entry._id }).select('_id');
+      if (iouTx) {
+          await Entry.findByIdAndUpdate(entry._id, { iou_details: iouTx._id });
+      }
+    }
   }
 
   revalidatePath('/');
   revalidatePath('/ledger');
+  revalidatePath('/debts');
   return { success: true };
 }
 
@@ -110,6 +175,18 @@ export async function updateEntry(type: 'expense' | 'cashin', id: string, payloa
 
   const oldEntry = await Entry.findOne({ _id: id, user: user.userId });
   if (!oldEntry) throw new Error('Entry not found');
+
+  // Revert old IOU effect first
+  if (oldEntry.is_iou) {
+    const oldTransaction = await IOUTransaction.findOne({ entry: oldEntry._id });
+    if (oldTransaction) {
+        await handleIOUEffect(oldEntry, {
+            contactId: oldTransaction.contact,
+            iouType: oldTransaction.iou_type,
+            iouAction: oldTransaction.iou_action
+        }, true);
+    }
+  }
 
   // Revert old payment method balance
   const oldMethod = await PaymentMethod.findOne({ name: oldEntry.payment_method, user: user.userId });
@@ -124,6 +201,7 @@ export async function updateEntry(type: 'expense' | 'cashin', id: string, payloa
 
   // Update entry
   Object.assign(oldEntry, payload);
+  oldEntry.is_iou = !!payload.iou;
   await oldEntry.save();
 
   // Apply new payment method balance
@@ -137,8 +215,17 @@ export async function updateEntry(type: 'expense' | 'cashin', id: string, payloa
     await newMethod.save();
   }
 
+  // Apply new IOU effect
+  if (payload.iou) {
+    await handleIOUEffect(oldEntry, payload.iou);
+    const iouTx = await IOUTransaction.findOne({ entry: oldEntry._id }).select('_id');
+    oldEntry.iou_details = iouTx?._id;
+    await oldEntry.save();
+  }
+
   revalidatePath('/');
   revalidatePath('/ledger');
+  revalidatePath('/debts');
   return { success: true };
 }
 
@@ -149,6 +236,21 @@ export async function deleteEntry(type: 'expense' | 'cashin', id: string) {
 
   const entry = await Entry.findOne({ _id: id, user: user.userId });
   if (!entry) throw new Error('Entry not found');
+
+  // Revert IOU effect
+  // We check for transaction existence as a fallback even if flag is missing
+  console.log(`[IOU] Checking entry ${id} for IOU reversal...`);
+  const iouTx = await IOUTransaction.findOne({ entry: entry._id });
+  if (iouTx) {
+      console.log(`[IOU] Found associated transaction ${iouTx._id}. Reverting...`);
+      await handleIOUEffect(entry, {
+          contactId: iouTx.contact,
+          iouType: iouTx.iou_type,
+          iouAction: iouTx.iou_action
+      }, true);
+  } else if (entry.is_iou) {
+      console.log(`[IOU] entry.is_iou is true but no transaction found for ${entry._id}`);
+  }
 
   // Revert payment method balance
   const method = await PaymentMethod.findOne({ name: entry.payment_method, user: user.userId });
@@ -165,5 +267,6 @@ export async function deleteEntry(type: 'expense' | 'cashin', id: string) {
 
   revalidatePath('/');
   revalidatePath('/ledger');
+  revalidatePath('/debts');
   return { success: true };
 }

@@ -22,6 +22,14 @@ const EntrySchema = new mongoose.Schema({
     type: String, // Using name for now, but could be ObjectId
     required: true,
   },
+  is_iou: {
+    type: Boolean,
+    default: false,
+  },
+  iou_details: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'IOUTransaction',
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -31,4 +39,8 @@ const EntrySchema = new mongoose.Schema({
   timestamps: true,
 });
 
-export default mongoose.models.Entry || mongoose.model('Entry', EntrySchema);
+if (process.env.NODE_ENV === 'development') {
+  delete mongoose.models.Entry;
+}
+const Entry = mongoose.models.Entry || mongoose.model('Entry', EntrySchema);
+export default Entry;

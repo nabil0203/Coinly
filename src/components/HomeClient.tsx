@@ -67,7 +67,7 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
             <span className="lg:hidden w-1/2 h-px bg-slate-200"></span>
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 lg:gap-6">
+          <div className="grid grid-cols-2 gap-3 lg:gap-6">
             
             <button 
               onClick={() => openModal('expense', todayStr)}
@@ -80,7 +80,6 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
               </div>
               <div className="mt-3 lg:mt-0 lg:ml-6">
                 <h3 className="text-sm lg:text-xl font-bold text-slate-800 leading-tight">Expense</h3>
-                <p className="hidden lg:block text-sm text-slate-500 mt-1">Log a new payment</p>
               </div>
             </button>
 
@@ -95,13 +94,12 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
               </div>
               <div className="mt-3 lg:mt-0 lg:ml-6">
                 <h3 className="text-sm lg:text-xl font-bold text-slate-800 leading-tight">Cash In</h3>
-                <p className="hidden lg:block text-sm text-slate-500 mt-1">Record salary/cash</p>
               </div>
             </button>
 
             <Link 
               href="/ledger"
-              className="col-span-2 lg:col-span-1 group flex items-center p-5 lg:p-6 bg-white border border-slate-200 rounded-2xl lg:rounded-3xl hover:border-blue-200 hover:shadow-xl transition-all duration-300 w-full text-left"
+              className="col-span-2 group flex items-center p-5 lg:p-6 bg-white border border-slate-200 rounded-2xl lg:rounded-3xl hover:border-blue-200 hover:shadow-xl transition-all duration-300 w-full text-left"
             >
               <div className="w-12 h-12 lg:w-16 lg:h-16 bg-blue-50 text-blue-600 rounded-lg lg:rounded-2xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 lg:w-8 lg:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -110,7 +108,20 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
               </div>
               <div className="ml-4 lg:ml-6">
                 <h3 className="text-sm lg:text-xl font-bold text-slate-800 leading-tight">View Monthly Ledger</h3>
-                <p className="hidden lg:block text-sm text-slate-500 mt-1">View complete history</p>
+              </div>
+            </Link>
+
+            <Link 
+              href="/debts"
+              className="col-span-2 group flex items-center p-5 lg:p-6 bg-white border border-slate-200 rounded-2xl lg:rounded-3xl hover:border-purple-200 hover:shadow-xl transition-all duration-300 w-full text-left"
+            >
+              <div className="w-12 h-12 lg:w-16 lg:h-16 bg-purple-50 text-purple-600 rounded-lg lg:rounded-2xl flex items-center justify-center border border-purple-100 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 lg:w-8 lg:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <div className="ml-4 lg:ml-6">
+                <h3 className="text-sm lg:text-xl font-bold text-slate-800 leading-tight">Debt and Receivable</h3>
               </div>
             </Link>
           </div>

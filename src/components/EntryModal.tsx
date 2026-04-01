@@ -1,11 +1,15 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
+import { getIOUContacts, createOrUpdateContact } from '@/app/actions/iou';
 
 interface Entry {
   description: string;
   amount: string;
   payment_method: string;
+  is_iou?: boolean;
+  iou_contact_id?: string;
+  iou_type?: 'debt' | 'receivable';
+  iou_action?: 'create' | 'repay';
+  iou_details?: string;
 }
 
 interface EntryModalProps {
@@ -20,32 +24,79 @@ interface EntryModalProps {
 }
 
 export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr, paymentMethods, editEntry = null }: EntryModalProps) {
-  const [entries, setEntries] = useState<Entry[]>([{ description: '', amount: '', payment_method: '' }]);
+  const [entries, setEntries] = useState<Entry[]>([{ 
+    description: '', 
+    amount: '', 
+    payment_method: '',
+    is_iou: false,
+    iou_contact_id: '',
+    iou_type: type === 'expense' ? 'receivable' : 'debt',
+    iou_action: 'create',
+    iou_details: ''
+  }]);
   const [selectedDate, setSelectedDate] = useState(dateStr);
+  const [iouContacts, setIouContacts] = useState<any[]>([]);
+  const [newContactName, setNewContactName] = useState('');
+  const [isAddingContact, setIsAddingContact] = useState(false);
 
   const isEditing = !!editEntry;
   const defaultMethod = paymentMethods.length > 0 ? paymentMethods[0].name : 'Cash';
 
   useEffect(() => {
     if (isOpen) {
+      // Fetch contacts
+      // Fetch fresh contacts and clear any stale selections pointing to deleted contacts
+      getIOUContacts().then(freshContacts => {
+        setIouContacts(freshContacts);
+        const validIds = new Set(freshContacts.map((c: any) => c._id));
+        setEntries(prev => prev.map(e =>
+          e.iou_contact_id && !validIds.has(e.iou_contact_id)
+            ? { ...e, iou_contact_id: '' }
+            : e
+        ));
+      });
+
       if (isEditing) {
         setEntries([{
           description: editEntry.description || '',
           amount: String(editEntry.amount || ''),
-          payment_method: editEntry.payment_method || defaultMethod
+          payment_method: editEntry.payment_method || defaultMethod,
+          is_iou: editEntry.is_iou || false,
+          iou_contact_id: editEntry.iou_details?.contact || '',
+          iou_type: editEntry.iou_details?.iou_type || (type === 'expense' ? 'receivable' : 'debt'),
+          iou_action: editEntry.iou_details?.iou_action || 'create',
+          iou_details: editEntry.iou_details?.details || ''
         }]);
         setSelectedDate(editEntry.date || dateStr);
       } else {
-        setEntries([{ description: '', amount: '', payment_method: defaultMethod }]);
+        setEntries([{ 
+          description: '', 
+          amount: '', 
+          payment_method: defaultMethod,
+          is_iou: false,
+          iou_contact_id: '',
+          iou_type: type === 'expense' ? 'receivable' : 'debt',
+          iou_action: 'create',
+          iou_details: ''
+        }]);
         setSelectedDate(dateStr);
       }
     }
-  }, [isOpen, isEditing, editEntry, paymentMethods, dateStr, defaultMethod]);
+  }, [isOpen, isEditing, editEntry, paymentMethods, dateStr, defaultMethod, type]);
 
   if (!isOpen) return null;
 
   const handleAddMore = () => {
-    setEntries([...entries, { description: '', amount: '', payment_method: defaultMethod }]);
+    setEntries([...entries, { 
+      description: '', 
+      amount: '', 
+      payment_method: defaultMethod,
+      is_iou: false,
+      iou_contact_id: '',
+      iou_type: type === 'expense' ? 'receivable' : 'debt',
+      iou_action: 'create',
+      iou_details: ''
+    }]);
   };
 
   const handleRemoveEntry = (index: number) => {
@@ -54,10 +105,42 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
     }
   };
 
-  const handleEntryChange = (index: number, field: keyof Entry, value: string) => {
-    const newEntries = [...entries];
-    newEntries[index][field] = value;
-    setEntries(newEntries);
+  const handleEntryChange = (index: number, updates: Partial<Entry>) => {
+    setEntries(prev => {
+        const newEntries = [...prev];
+        const entry = { ...newEntries[index], ...updates };
+        
+        // Automatically set iou_type and iou_action based on transaction type if not set
+        if (updates.is_iou === true) {
+            if (!entry.iou_type) {
+                entry.iou_type = type === 'expense' ? 'receivable' : 'debt';
+            }
+            if (!entry.iou_action) {
+                entry.iou_action = 'create';
+            }
+        }
+        
+        newEntries[index] = entry;
+        return newEntries;
+    });
+  };
+
+  const handleCreateContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newContactName.trim()) return;
+    
+    try {
+      const contact = await createOrUpdateContact(newContactName);
+      setIouContacts([...iouContacts, contact]);
+      setNewContactName('');
+      setIsAddingContact(false);
+      // If we only have one entry, auto-select this contact
+      if (entries.length === 1) {
+        handleEntryChange(0, { iou_contact_id: contact._id });
+      }
+    } catch (error: any) {
+      alert(`Failed to add contact: ${error.message || 'Unknown error'}`);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -85,21 +168,30 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
       }
     }
 
+    const mapEntryToPayload = (entry: Entry) => {
+        const payload: any = {
+            date: selectedDate,
+            description: entry.description,
+            amount: parseInt(entry.amount, 10),
+            payment_method: entry.payment_method
+        };
+
+        if (entry.is_iou && entry.iou_contact_id) {
+            payload.iou = {
+                contactId: entry.iou_contact_id,
+                iouType: entry.iou_type,
+                iouAction: entry.iou_action,
+                details: entry.iou_details
+            };
+        }
+
+        return payload;
+    };
+
     if (isEditing) {
-      const entry = entries[0];
-      onSubmit(type, {
-        date: selectedDate,
-        description: entry.description,
-        amount: parseInt(entry.amount, 10),
-        payment_method: entry.payment_method
-      }, editEntry._id);
+      onSubmit(type, mapEntryToPayload(entries[0]), editEntry._id);
     } else {
-      const payloads = entries.map(entry => ({
-        date: selectedDate,
-        description: entry.description,
-        amount: parseInt(entry.amount, 10),
-        payment_method: entry.payment_method
-      }));
+      const payloads = entries.map(mapEntryToPayload);
       onSubmit(type, payloads);
     }
   };
@@ -112,7 +204,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-      <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-md' : 'max-w-2xl'} w-full max-h-[90vh] flex flex-col transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
+      <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-xl' : 'max-w-3xl'} w-full max-h-[90vh] flex flex-col transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
         
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
@@ -166,18 +258,18 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                 )}
                 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                  <div className={isEditing ? "md:col-span-12" : "md:col-span-12 lg:col-span-6"}>
+                  <div className="md:col-span-12 lg:col-span-6">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Description</label>
                     <input 
                       type="text" 
                       className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 placeholder:text-slate-300 font-medium"
                       value={entry.description} 
-                      onChange={e => handleEntryChange(index, 'description', e.target.value)} 
+                      onChange={e => handleEntryChange(index, { description: e.target.value })} 
                       required 
                       placeholder="What was this for?"
                     />
                   </div>
-                  <div className={isEditing ? "md:col-span-6" : "md:col-span-6 lg:col-span-3"}>
+                  <div className="md:col-span-6 lg:col-span-3">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Amount</label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">৳</span>
@@ -186,17 +278,17 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                         step="1"
                         className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-bold tabular-nums"
                         value={entry.amount} 
-                        onChange={e => handleEntryChange(index, 'amount', e.target.value)} 
+                        onChange={e => handleEntryChange(index, { amount: e.target.value })} 
                         required 
                       />
                     </div>
                   </div>
-                  <div className={isEditing ? "md:col-span-6" : "md:col-span-6 lg:col-span-3"}>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1 whitespace-nowrap overflow-hidden text-ellipsis">Payment Method</label>
+                  <div className="md:col-span-6 lg:col-span-3">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1 whitespace-nowrap overflow-hidden text-ellipsis">Method</label>
                     <select 
                       className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
                       value={entry.payment_method} 
-                      onChange={e => handleEntryChange(index, 'payment_method', e.target.value)}
+                      onChange={e => handleEntryChange(index, { payment_method: e.target.value })}
                     >
                       {paymentMethods.length > 0 ? paymentMethods.map(pm => (
                         <option key={pm._id || pm.id} value={pm.name}>{pm.name}</option>
@@ -208,6 +300,111 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                       )}
                     </select>
                   </div>
+                </div>
+
+                {/* IOU Section */}
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between mb-3">
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <input 
+                                type="checkbox" 
+                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all"
+                                checked={entry.is_iou}
+                                onChange={e => handleEntryChange(index, { is_iou: e.target.checked })}
+                            />
+                            <span className="text-xs font-bold text-slate-500 group-hover:text-slate-800 transition-colors uppercase tracking-tight">Debt / Loan?</span>
+                        </label>
+                        {entry.is_iou && (
+                            <button 
+                                type="button"
+                                onClick={() => setIsAddingContact(!isAddingContact)}
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                            >
+                                {isAddingContact ? 'Cancel' : '+ New Person'}
+                            </button>
+                        )}
+                    </div>
+
+                    {entry.is_iou && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                            {isAddingContact && (
+                                <div className="flex gap-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Person's Name" 
+                                        className="flex-1 px-3 py-1.5 text-xs border border-blue-200 rounded-lg outline-none focus:border-blue-500"
+                                        value={newContactName}
+                                        onChange={e => setNewContactName(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCreateContact(e)}
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={handleCreateContact}
+                                        className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-all h-full"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Whom (Contact)</label>
+                                    <select 
+                                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
+                                        value={entry.iou_contact_id}
+                                        onChange={e => handleEntryChange(index, { iou_contact_id: e.target.value })}
+                                        required={entry.is_iou}
+                                    >
+                                        <option value="">Select Person</option>
+                                        {iouContacts
+                                          .filter((c: any) => (c.total_receivable > 0 || c.total_debt > 0 || c._id === entry.iou_contact_id))
+                                          .map(contact => (
+                                            <option key={contact._id} value={contact._id}>{contact.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Action Type</label>
+                                    <select 
+                                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
+                                        value={`${entry.iou_type}_${entry.iou_action}`}
+                                        onChange={e => {
+                                            const [iType, iAction] = e.target.value.split('_');
+                                            handleEntryChange(index, { 
+                                                iou_type: iType as any, 
+                                                iou_action: iAction as any 
+                                            });
+                                        }}
+                                        required={entry.is_iou}
+                                    >
+                                        {type === 'expense' ? (
+                                            <>
+                                                <option value="receivable_create">Lending Money (New Loan)</option>
+                                                <option value="debt_repay">Repaying Debt (Paying Off)</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="debt_create">Taking Debt (Borrowing)</option>
+                                                <option value="receivable_repay">Collecting Money (Return)</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="space-y-1.5 px-1 pb-1">
+                                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Details</label>
+                                <input 
+                                    type="text" 
+                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm font-bold text-slate-700 placeholder:text-slate-300"
+                                    value={entry.iou_details}
+                                    onChange={e => handleEntryChange(index, { iou_details: e.target.value })}
+                                    placeholder="Specific notes e.g., For office lunch..."
+                                    required={entry.is_iou}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
               </div>
             ))}
