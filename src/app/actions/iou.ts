@@ -16,18 +16,15 @@ export async function getIOUContacts() {
 
   // Auto-backfill primary_type for pre-existing contacts that don't have it set yet.
   // This helps identify which section settled contacts belong to.
-  for (const contact of contacts) {
-    if (!contact.primary_type) {
-      // Find the first transaction of this contact
+  const needsBackfill = contacts.filter((c: any) => !c.primary_type);
+  if (needsBackfill.length > 0) {
+    await Promise.all(needsBackfill.map(async (contact: any) => {
       const tx = await IOUTransaction.findOne({ contact: contact._id, user: user.userId }).sort({ date: 1, createdAt: 1 });
       if (tx) {
         contact.primary_type = tx.iou_type;
         await contact.save();
-      } else {
-        // If no transaction records but has a name, it might have been created empty.
-        // We'll leave it as null for now, but we'll handle it in the UI filter.
       }
-    }
+    }));
   }
 
   return JSON.parse(JSON.stringify(contacts));

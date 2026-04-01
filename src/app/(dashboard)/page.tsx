@@ -10,8 +10,10 @@ export default async function HomePage() {
   const authUser = await getCurrentUser();
   if (!authUser) return null;
 
-  const user = await User.findById(authUser.userId).lean();
-  const paymentMethods = await getPaymentMethods();
+  const [user, paymentMethods] = await Promise.all([
+    User.findById(authUser.userId).lean(),
+    getPaymentMethods()
+  ]);
 
   const displayName = user?.full_name || user?.username || 'Friend';
 

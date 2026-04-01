@@ -59,31 +59,18 @@ export async function getEntries(month: number, year: number) {
   let entriesQuery = Entry.find({
     user: user.userId,
     date: { $gte: startOfMonth, $lte: endOfMonth }
-  }).sort({ date: 1, createdAt: 1 });
+  })
+  .sort({ date: 1, createdAt: 1 })
+  .populate({ path: 'iou_details', strictPopulate: false });
 
   const entries = await entriesQuery.lean();
-
-  // Robust manual population for IOU Details to prevent StrictPopulateError crashes
-  // especially in development mode with schema lags.
-  const populatedEntries = await Promise.all(entries.map(async (e: any) => {
-    if (e.is_iou && e.iou_details) {
-      try {
-        const iouDetails = await IOUTransaction.findById(e.iou_details).lean();
-        return { ...e, iou_details: iouDetails };
-      } catch (err) {
-        console.error('[Ledger] Manual population error:', err);
-        return e;
-      }
-    }
-    return e;
-  }));
 
   const grouped = {
     expenses: {} as any,
     cashin: {} as any,
   };
 
-  populatedEntries.forEach((e: any) => {
+  entries.forEach((e: any) => {
     const date = e.date;
     const typeKey = e.type === 'expense' ? 'expenses' : 'cashin';
     if (!grouped[typeKey][date]) {
@@ -96,10 +83,7 @@ export async function getEntries(month: number, year: number) {
   const methods = await PaymentMethod.find({ user: user.userId }).lean();
   const totalCurrentBalance = methods.reduce((acc: number, m: any) => acc + (Number(m.balance) || 0), 0);
 
-  // 2. Calculate net sum of entries from startOfMonth until now (infinity)
-  // We fetch ALL entries for the user to be safe with date normalization
-  const allUserEntries = await Entry.find({ user: user.userId }).lean();
-
+  // 2. Calculate net sum of entries from startOfMonth until now (infinity) using MongoDB Aggregation
   const normalizeDate = (d: string) => {
     const parts = d.split('-');
     if (parts.length !== 3) return d;
@@ -107,18 +91,31 @@ export async function getEntries(month: number, year: number) {
   };
 
   const normalizedStart = normalizeDate(startOfMonth);
-  let futureNet = 0;
 
-  allUserEntries.forEach((e: any) => {
-    const amt = Number(e.amount) || 0;
-    const normalizedEntryDate = normalizeDate(e.date);
-    
-    // Sum everything from the start of the viewed month onwards
-    if (normalizedEntryDate >= normalizedStart) {
-      if (e.type === 'cashin') futureNet += amt;
-      else futureNet -= amt;
+  const aggregationResult = await Entry.aggregate([
+    {
+      $match: {
+        user: user.userId,
+        // Using string comparison since dates are stored as YYYY-MM-DD
+        date: { $gte: normalizedStart }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalCashin: {
+          $sum: { $cond: [{ $eq: ["$type", "cashin"] }, "$amount", 0] }
+        },
+        totalExpense: {
+          $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
+        }
+      }
     }
-  });
+  ]);
+
+  const futureNet = aggregationResult.length > 0 
+    ? aggregationResult[0].totalCashin - aggregationResult[0].totalExpense
+    : 0;
 
   const prevBalance = totalCurrentBalance - futureNet;
   

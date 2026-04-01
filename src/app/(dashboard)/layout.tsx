@@ -9,12 +9,15 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const [user, paymentMethods] = await Promise.all([
+    getCurrentUser(),
+    getPaymentMethods(),
+  ]);
+
   if (!user) {
     redirect('/login');
   }
 
-  const paymentMethods = await getPaymentMethods();
   const totalBalance = paymentMethods.reduce((acc: number, method: any) => acc + (Number(method.balance) || 0), 0);
 
   return (

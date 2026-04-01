@@ -1,18 +1,19 @@
 'use server';
 
+import { cache } from 'react';
 import dbConnect from '@/lib/db';
 import PaymentMethod from '@/models/PaymentMethod';
 import { getCurrentUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
-export async function getPaymentMethods() {
+export const getPaymentMethods = cache(async () => {
   await dbConnect();
   const user = await getCurrentUser();
   if (!user) return [];
 
   const methods = await PaymentMethod.find({ user: user.userId }).lean();
   return JSON.parse(JSON.stringify(methods));
-}
+});
 
 export async function addPaymentMethod(name: string, balance: number = 0) {
   await dbConnect();
