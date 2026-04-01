@@ -46,6 +46,10 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
   };
 
   const handleDelete = async (tx: any) => {
+    if (!confirm('Are you sure you want to delete this transaction record?')) {
+      return;
+    }
+
     // Fallback in case entry is not populated (string)
     const entryId = tx.entry?._id || (typeof tx.entry === 'string' ? tx.entry : null);
     const entryType = tx.entry?.type;
@@ -126,19 +130,24 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
               </div>
             ) : history.length > 0 ? (
               <div className="space-y-3">
-                {history.map((tx: any) => (
+                {history.map((tx: any) => {
+                  const isOutflow = (iouType === 'receivable' && tx.iou_action === 'create') || (iouType === 'debt' && tx.iou_action === 'repay');
+                  const amountColor = isOutflow ? 'text-red-500' : 'text-blue-500';
+                  const sign = isOutflow ? '-' : '+';
+                  
+                  return (
                   <div key={tx._id} className="bg-white border border-slate-100 rounded-[1.25rem] p-3 sm:p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group/row relative overflow-hidden">
-                    <div className={`absolute top-0 left-0 w-1 h-full ${tx.iou_action === 'create' ? 'bg-purple-500' : 'bg-green-500'} opacity-50`}></div>
+                    <div className={`absolute top-0 left-0 w-1 h-full ${isOutflow ? 'bg-red-500' : 'bg-blue-500'} opacity-50`}></div>
                     
                     <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
-                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${tx.iou_action === 'create' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}`}>
-                        {tx.iou_action === 'create' ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${isOutflow ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                        {isOutflow ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
                           </svg>
                         ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                           </svg>
                         )}
                       </div>
@@ -168,15 +177,14 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
                     </div>
                     
                     <div className="flex flex-col items-end gap-0.5 sm:gap-1 ml-4 shrink-0">
-                      <span className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest ${tx.iou_action === 'create' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest ${isOutflow ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
                         {iouType === 'receivable' 
                           ? (tx.iou_action === 'create' ? 'Lent' : 'Returned')
                           : (tx.iou_action === 'create' ? 'Loaned' : 'Paid Off')
                         }
                       </span>
-                      <p className={`text-base sm:text-2xl font-black tabular-nums transition-transform group-hover:scale-105 origin-right flex items-center gap-0.5 ${tx.iou_action === 'create' ? 'text-slate-900' : 'text-green-600'}`}>
-                        {tx.iou_action === 'repay' ? '-' : ''}
-                        <span className="text-sm sm:text-xl">৳</span> 
+                      <p className={`text-base sm:text-2xl font-black tabular-nums transition-transform group-hover:scale-105 origin-right flex items-center gap-0.5 ${amountColor}`}>
+                        {sign} <span className="text-sm sm:text-xl">৳</span> 
                         {tx.amount.toLocaleString()}
                       </p>
                     </div>
@@ -195,7 +203,7 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
                       </svg>
                     </button>
                   </div>
-                ))}
+                )})}
               </div>
             ) : (
               <div className="py-8 text-center bg-white/50 rounded-2xl border border-dashed border-slate-200">
