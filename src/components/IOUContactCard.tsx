@@ -101,7 +101,7 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
         </div>
         <div className="text-right flex items-center gap-3 sm:gap-4 shrink-0">
           <div className="flex flex-col items-end">
-            <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 whitespace-nowrap">Due Amount</p>
+            <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 whitespace-nowrap">Total Due</p>
             <p className={`text-xl md:text-2xl font-black ${labelColor} whitespace-nowrap flex items-center gap-1`}>
               <span className="text-lg md:text-xl">৳</span>
               {currentBalance.toLocaleString()}
