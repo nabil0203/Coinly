@@ -16,13 +16,13 @@ export default async function DebtsPage() {
   // Show contacts in their original section (tracked by primary_type).
   // Active contacts: balance > 0. Settled contacts: balance === 0 but still shown so user can delete them.
   // Fallback: if primary_type is missing but it was originally a receivable (has total_receivable history), keep it there.
-  const myReceivables = contacts.filter((c: any) => 
-    c.total_receivable > 0 || 
-    c.primary_type === 'receivable' || 
+  const myReceivables = contacts.filter((c: any) =>
+    c.total_receivable > 0 ||
+    c.primary_type === 'receivable' ||
     (c.total_receivable === 0 && c.total_debt === 0 && (!c.primary_type || c.primary_type === 'receivable'))
   );
-  const myDebts = contacts.filter((c: any) => 
-    c.total_debt > 0 || 
+  const myDebts = contacts.filter((c: any) =>
+    c.total_debt > 0 ||
     c.primary_type === 'debt' ||
     (c.total_receivable === 0 && c.total_debt === 0 && c.primary_type === 'debt')
   );
