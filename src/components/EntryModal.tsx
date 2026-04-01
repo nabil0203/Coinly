@@ -191,7 +191,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
     if (isEditing) {
       onSubmit(type, mapEntryToPayload(entries[0]), editEntry._id);
     } else {
-      const payloads = entries.map(mapEntryToPayload);
+      const payloads = entries.map((entry: Entry) => mapEntryToPayload(entry));
       onSubmit(type, payloads);
     }
   };
@@ -290,7 +290,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                       value={entry.payment_method} 
                       onChange={e => handleEntryChange(index, { payment_method: e.target.value })}
                     >
-                      {paymentMethods.length > 0 ? paymentMethods.map(pm => (
+                      {paymentMethods.length > 0 ? paymentMethods.map((pm: any) => (
                         <option key={pm._id || pm.id} value={pm.name}>{pm.name}</option>
                       )) : (
                         <>
@@ -359,7 +359,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                                         <option value="">Select Person</option>
                                         {iouContacts
                                           .filter((c: any) => (c.total_receivable > 0 || c.total_debt > 0 || c._id === entry.iou_contact_id))
-                                          .map(contact => (
+                                          .map((contact: any) => (
                                             <option key={contact._id} value={contact._id}>{contact.name}</option>
                                         ))}
                                     </select>

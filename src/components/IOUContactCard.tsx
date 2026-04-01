@@ -114,7 +114,7 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
               </div>
             ) : history.length > 0 ? (
               <div className="space-y-3">
-                {history.map((tx) => (
+                {history.map((tx: any) => (
                   <div key={tx._id} className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow group/row">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tx.iou_action === 'create' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}`}>

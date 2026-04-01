@@ -67,7 +67,7 @@ export default async function DebtsPage() {
 
           <div className="space-y-6">
             {myReceivables.length > 0 ? (
-              myReceivables.map(contact => (
+              myReceivables.map((contact: any) => (
                 <IOUContactCard key={contact._id} contact={contact} iouType="receivable" />
               ))
             ) : (
@@ -92,7 +92,7 @@ export default async function DebtsPage() {
 
           <div className="space-y-6">
             {myDebts.length > 0 ? (
-              myDebts.map(contact => (
+              myDebts.map((contact: any) => (
                 <IOUContactCard key={contact._id} contact={contact} iouType="debt" />
               ))
             ) : (

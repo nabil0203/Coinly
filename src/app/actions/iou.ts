@@ -69,7 +69,7 @@ export async function deleteIOUContact(contactId: string) {
 
     // Delete all transactions first
     const transactions = await IOUTransaction.find({ contact: contactId, user: user.userId });
-    const entryIds = transactions.map(t => t.entry);
+    const entryIds = transactions.map((t: any) => t.entry);
 
     // Disassociate ledger entries (optional but cleaner)
     await Entry.updateMany(
