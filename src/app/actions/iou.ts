@@ -5,6 +5,7 @@ import IOUContact from '@/models/IOUContact';
 import IOUTransaction from '@/models/IOUTransaction';
 import Entry from '@/models/Entry'; // Must import to register model for population
 import { getCurrentUser } from '@/lib/auth';
+import { ContactSchema } from '@/lib/validations';
 import { revalidatePath } from 'next/cache';
 
 export async function getIOUContacts() {
@@ -43,14 +44,16 @@ export async function getContactHistory(contactId: string) {
 }
 
 export async function createOrUpdateContact(name: string) {
+  const parsed = ContactSchema.safeParse({ name });
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
   try {
     await dbConnect();
     const user = await getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    let contact = await IOUContact.findOne({ name, user: user.userId });
+    let contact = await IOUContact.findOne({ name: parsed.data.name, user: user.userId });
     if (!contact) {
-      contact = await IOUContact.create({ name, user: user.userId });
+      contact = await IOUContact.create({ name: parsed.data.name, user: user.userId });
     }
     return JSON.parse(JSON.stringify(contact));
   } catch (error: unknown) {

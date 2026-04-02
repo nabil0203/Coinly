@@ -7,6 +7,8 @@ import PaymentMethod from '@/models/PaymentMethod';
 import IOUContact from '@/models/IOUContact';
 import IOUTransaction from '@/models/IOUTransaction';
 import { getCurrentUser } from '@/lib/auth';
+import { EntryPayloadSchema } from '@/lib/validations';
+import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
 interface EntryDoc {
@@ -155,9 +157,11 @@ export async function addEntry(type: 'expense' | 'cashin', payload: EntryPayload
   const user = await getCurrentUser();
   if (!user) throw new Error('Unauthorized');
 
-  const payloads = Array.isArray(payload) ? payload : [payload];
+  const payloadsArray = Array.isArray(payload) ? payload : [payload];
+  const parsed = z.array(EntryPayloadSchema).safeParse(payloadsArray);
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
-  for (const p of payloads) {
+  for (const p of parsed.data) {
     const entry = await Entry.create({
       ...p,
       type,
@@ -193,6 +197,9 @@ export async function addEntry(type: 'expense' | 'cashin', payload: EntryPayload
 }
 
 export async function updateEntry(type: 'expense' | 'cashin', id: string, payload: EntryPayload) {
+  const parsed = EntryPayloadSchema.safeParse(payload);
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+
   await dbConnect();
   const user = await getCurrentUser();
   if (!user) throw new Error('Unauthorized');
@@ -224,24 +231,24 @@ export async function updateEntry(type: 'expense' | 'cashin', id: string, payloa
   }
 
   // Update entry
-  Object.assign(oldEntry, payload);
-  oldEntry.is_iou = !!payload.iou;
+  Object.assign(oldEntry, parsed.data);
+  oldEntry.is_iou = !!parsed.data.iou;
   await oldEntry.save();
 
   // Apply new payment method balance
-  const newMethod = await PaymentMethod.findOne({ name: payload.payment_method, user: user.userId });
+  const newMethod = await PaymentMethod.findOne({ name: parsed.data.payment_method, user: user.userId });
   if (newMethod) {
     if (type === 'cashin') {
-      newMethod.balance += payload.amount;
+      newMethod.balance += parsed.data.amount;
     } else {
-      newMethod.balance -= payload.amount;
+      newMethod.balance -= parsed.data.amount;
     }
     await newMethod.save();
   }
 
   // Apply new IOU effect
-  if (payload.iou) {
-    await handleIOUEffect(oldEntry, payload.iou);
+  if (parsed.data.iou) {
+    await handleIOUEffect(oldEntry, parsed.data.iou);
     const iouTx = await IOUTransaction.findOne({ entry: oldEntry._id }).select('_id');
     oldEntry.iou_details = iouTx?._id;
     await oldEntry.save();

@@ -4,7 +4,6 @@ const PaymentMethodSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Please provide a name'],
-    unique: true,
   },
   balance: {
     type: Number,
@@ -18,5 +17,7 @@ const PaymentMethodSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
+PaymentMethodSchema.index({ name: 1, user: 1 }, { unique: true });
 
 export default mongoose.models.PaymentMethod || mongoose.model('PaymentMethod', PaymentMethodSchema);

@@ -3,6 +3,7 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import { getCurrentUser } from '@/lib/auth';
+import { ProfileSchema } from '@/lib/validations';
 import { revalidatePath } from 'next/cache';
 
 export async function updateProfileAction(data: {
@@ -18,14 +19,19 @@ export async function updateProfileAction(data: {
     const user = await User.findById(authUser.userId);
     if (!user) return { error: 'User not found' };
 
-    if (data.username && data.username !== user.username) {
-        const exists = await User.findOne({ username: data.username });
+    const parsed = ProfileSchema.safeParse(data);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+    const validatedData = parsed.data;
+
+    if (validatedData.username && validatedData.username !== user.username) {
+        const exists = await User.findOne({ username: validatedData.username });
         if (exists) return { error: 'Username already taken' };
-        user.username = data.username;
+        user.username = validatedData.username;
     }
 
-    if (data.email) user.email = data.email;
-    if (data.full_name) user.full_name = data.full_name;
+    if (validatedData.email) user.email = validatedData.email;
+    if (validatedData.full_name) user.full_name = validatedData.full_name;
 
     await user.save();
     revalidatePath('/profile');

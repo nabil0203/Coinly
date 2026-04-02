@@ -12,6 +12,7 @@ const EntrySchema = new mongoose.Schema({
   amount: {
     type: Number,
     required: true,
+    min: [0, 'Amount cannot be negative'],
   },
   type: {
     type: String,

@@ -5,19 +5,25 @@ import User from '@/models/User';
 import PaymentMethod from '@/models/PaymentMethod';
 import bcrypt from 'bcryptjs';
 import { signToken, setAuthCookie, removeAuthCookie } from '@/lib/auth';
+import { LoginSchema, RegistrationSchema } from '@/lib/validations';
 import { redirect } from 'next/navigation';
 
 export async function registerAction(formData: FormData) {
   await dbConnect();
 
-  const fullName = formData.get('fullName') as string;
-  const username = formData.get('username') as string;
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
+  const formDataObj = {
+    fullName: formData.get('fullName'),
+    username: formData.get('username'),
+    email: formData.get('email'),
+    password: formData.get('password'),
+  };
 
-  if (!fullName || !username || !email || !password) {
-    return { error: 'All fields are required' };
+  const parsed = RegistrationSchema.safeParse(formDataObj);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
   }
+
+  const { fullName, username, email, password } = parsed.data;
 
   const existingUser = await User.findOne({ 
     $or: [{ username }, { email }] 
@@ -61,12 +67,17 @@ export async function registerAction(formData: FormData) {
 export async function loginAction(formData: FormData) {
   await dbConnect();
 
-  const username = formData.get('username') as string;
-  const password = formData.get('password') as string;
+  const formDataObj = {
+    username: formData.get('username'),
+    password: formData.get('password'),
+  };
 
-  if (!username || !password) {
-    return { error: 'Username and password are required' };
+  const parsed = LoginSchema.safeParse(formDataObj);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
   }
+
+  const { username, password } = parsed.data;
 
   const user = await User.findOne({ username });
 

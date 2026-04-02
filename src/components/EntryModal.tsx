@@ -297,6 +297,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                         value={entry.amount} 
                         onChange={e => handleEntryChange(index, { amount: e.target.value })} 
                         required 
+                        min="0"
                       />
                     </div>
                   </div>

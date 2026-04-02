@@ -13,10 +13,12 @@ const IOUContactSchema = new mongoose.Schema({
   total_receivable: {
     type: Number,
     default: 0, // How much THEY owe the USER
+    min: [0, 'Total receivable cannot be below 0'],
   },
   total_debt: {
     type: Number,
     default: 0, // How much the USER owes THEM
+    min: [0, 'Total debt cannot be below 0'],
   },
   primary_type: {
     type: String,
