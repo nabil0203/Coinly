@@ -71,7 +71,7 @@ export default async function DebtsPage() {
                 </div>
                 My Receivables
               </h3>
-              <span className="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm">People owe you</span>
+              <span className="bg-blue-300 text-black-700 text-[13px] font-black px-3 py-1 rounded-full tracking-tighter shadow-sm">People owe you</span>
             </div>
 
             <div className="space-y-6">
@@ -91,12 +91,12 @@ export default async function DebtsPage() {
           <div className="space-y-8">
             <div className="flex items-center justify-between px-2">
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
-                <div className="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center border border-red-100 shadow-sm font-black">
+                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center border border-blue-100 shadow-sm font-black">
                   -
                 </div>
                 My Debts
               </h3>
-              <span className="bg-red-100 text-red-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm">You owe people</span>
+              <span className="bg-red-300 text-black-700 text-[13px] font-black px-3 py-1 rounded-full tracking-tighter shadow-sm">You owe people</span>
             </div>
 
             <div className="space-y-6">
