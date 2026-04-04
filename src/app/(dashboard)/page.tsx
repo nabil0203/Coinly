@@ -18,9 +18,9 @@ export default async function HomePage() {
   const displayName = user?.full_name || user?.username || 'Friend';
 
   return (
-    <HomeClient 
-      displayName={displayName} 
-      paymentMethods={paymentMethods} 
+    <HomeClient
+      displayName={displayName}
+      paymentMethods={paymentMethods}
     />
   );
 }

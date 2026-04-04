@@ -92,12 +92,13 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-start">
 
-          <div className="lg:col-span-7 order-1 space-y-6 md:space-y-10 animate-in fade-in duration-700">
+          <div className="lg:col-span-7 order-1 space-y-4 lg:space-y-6 animate-in fade-in duration-700">
+            {/* Payment Methods Label */}
+            <div className="flex items-center justify-between px-1">
+              <h4 className="text-xs lg:text-sm font-bold text-slate-400 uppercase tracking-widest">My Accounts</h4>
+            </div>
             {/* Payment Methods Container */}
             <div className="bg-white border border-fintech-border rounded-[2rem] lg:rounded-[2.5rem] p-4 md:p-8 lg:p-10 shadow-fintech-card">
-              <div className="mb-6 px-1 flex items-center justify-between">
-                <h4 className="text-xs lg:text-sm font-bold text-slate-400 uppercase tracking-widest">My Accounts</h4>
-              </div>
               <PaymentMethodsGrid paymentMethods={paymentMethods} />
             </div>
           </div>
