@@ -40,8 +40,7 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
   const todayStr = getLocalDateStr();
 
   const handleEntrySubmit = async (type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[]) => {
-    const singlePayload = Array.isArray(payload) ? payload[0] : (payload as EntryPayload);
-    await addEntry(type, singlePayload);
+    await addEntry(type, payload);
     setModalOpen(false);
   };
 
