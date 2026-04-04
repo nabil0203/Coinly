@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EntryModal } from './EntryModal';
 import { addEntry, updateEntry, deleteEntry, type EntryPayload } from '@/app/actions/ledger';
@@ -27,7 +27,6 @@ interface LedgerClientProps {
 interface LedgerRow {
   isFirst: boolean;
   isLast: boolean;
-  colorGroup: string;
   day: number;
   dayName: string;
   dateStr: string;
@@ -38,15 +37,30 @@ interface LedgerRow {
   dailyExpenseTotal?: number;
   dayEndBalance?: number;
   index: number;
+  expSpan?: number;
+  incSpan?: number;
+  isExpStart?: boolean;
+  isIncStart?: boolean;
 }
 
 const getDaysInMonth = (year: number, month: number) => {
   return new Date(year, month + 1, 0).getDate();
 };
 
+function calculateSpans(entryCount: number, totalRows: number): number[] {
+  if (entryCount === 0) return [totalRows];
+  const baseSpan = Math.floor(totalRows / entryCount);
+  const extra = totalRows % entryCount;
+  const spans = new Array(entryCount).fill(baseSpan);
+  for (let i = 0; i < extra; i++) {
+    spans[i]++;
+  }
+  return spans;
+}
+
 export function LedgerClient({ initialData, paymentMethods, initialMonth, initialYear }: LedgerClientProps) {
   const router = useRouter();
-  const [currentDate, setCurrentDate] = useState(new Date(initialYear, initialMonth, 1));
+  const [currentDate, setCurrentDate] = useState(() => new Date(initialYear, initialMonth, 1));
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [isScrolled, setIsScrolled] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -54,12 +68,10 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
   const [targetDate, setTargetDate] = useState('');
   const [editEntry, setEditEntry] = useState<LedgerEntry | null>(null);
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const [prevInitial, setPrevInitial] = useState(`${initialYear}-${initialMonth}`);
-
-  if (`${initialYear}-${initialMonth}` !== prevInitial) {
-    setPrevInitial(`${initialYear}-${initialMonth}`);
+  // Sync currentDate if initialMonth/initialYear props change
+  const [prevProps, setPrevProps] = useState({ initialMonth, initialYear });
+  if (prevProps.initialMonth !== initialMonth || prevProps.initialYear !== initialYear) {
+    setPrevProps({ initialMonth, initialYear });
     setCurrentDate(new Date(initialYear, initialMonth, 1));
   }
 
@@ -113,19 +125,10 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
   let runningBalance = Number(initialData.prevBalance);
 
   const totals = {
-    exMethods: {} as Record<string, number>,
-    inMethods: {} as Record<string, number>,
     exAll: 0,
-    inAll: 0,
-    runningBalance: 0
+    inAll: 0
   };
 
-  allMethods.forEach(m => {
-    totals.exMethods[m] = 0;
-    totals.inMethods[m] = 0;
-  });
-
-  let colorGroup = 0;
   for (let day = 1; day <= daysInMonth; day++) {
     const padMonth = String(month + 1).padStart(2, '0');
     const padDay = String(day).padStart(2, '0');
@@ -136,43 +139,73 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
     const cashins = initialData.cashin?.[dateStr] || [];
     const rowCount = Math.max(1, expenses.length, cashins.length);
 
+    const expSpans = calculateSpans(expenses.length, rowCount);
+    const incSpans = calculateSpans(cashins.length, rowCount);
+
+    let expIdx = 0;
+    let expRowCounter = 0;
+    let incIdx = 0;
+    let incRowCounter = 0;
+
     let dailyExpenseTotal = 0;
 
     for (let i = 0; i < rowCount; i++) {
-        const exp = expenses[i] || null;
-        const inc = cashins[i] || null;
+        const rowProps: Partial<LedgerRow> = {
+          isFirst: i === 0,
+          isLast: i === rowCount - 1,
+          day, dayName, dateStr, rowCount,
+          index: rows.length
+        };
+
+        // Expense side logic
+        if (expRowCounter === 0) {
+            rowProps.exp = expenses[expIdx] || null;
+            rowProps.expSpan = expSpans[expIdx];
+            rowProps.isExpStart = true;
+            expRowCounter = expSpans[expIdx];
+            expIdx++;
+        } else {
+            rowProps.exp = null; // Don't carry over for balance calc if not start
+            rowProps.isExpStart = false;
+            rowProps.expSpan = undefined;
+        }
+        expRowCounter--;
+
+        // Income side logic
+        if (incRowCounter === 0) {
+            rowProps.inc = cashins[incIdx] || null;
+            rowProps.incSpan = incSpans[incIdx];
+            rowProps.isIncStart = true;
+            incRowCounter = incSpans[incIdx];
+            incIdx++;
+        } else {
+            rowProps.inc = null; // Don't carry over for balance calc if not start
+            rowProps.isIncStart = false;
+            rowProps.incSpan = undefined;
+        }
+        incRowCounter--;
+
+        const exp = rowProps.exp as LedgerEntry | null;
+        const inc = rowProps.inc as LedgerEntry | null;
   
         if (exp) {
           const amt = Number(exp.amount);
           dailyExpenseTotal += amt;
           totals.exAll += amt;
-          if (totals.exMethods[exp.payment_method] !== undefined) {
-            totals.exMethods[exp.payment_method] += amt;
-          }
+          runningBalance -= amt;
         }
         if (inc) {
           const amt = Number(inc.amount);
           totals.inAll += amt;
-          if (totals.inMethods[inc.payment_method] !== undefined) {
-            totals.inMethods[inc.payment_method] += amt;
-          }
           runningBalance += amt;
         }
-        if (exp) runningBalance -= Number(exp.amount);
   
         rows.push({
-          isFirst: i === 0,
-          isLast: i === rowCount - 1,
-          colorGroup: colorGroup % 2 === 0 ? 'group-even' : 'group-odd',
-          day, dayName, dateStr, rowCount,
-          exp, inc,
-          currentBalance: runningBalance,
-          dailyExpenseTotal: i === 0 ? 0 : undefined,
-          index: rows.length
-        });
+          ...rowProps,
+          currentBalance: runningBalance
+        } as LedgerRow);
     }
 
-    colorGroup++;
 
     if (rows.length > 0) {
       const targetRow = rows[rows.length - rowCount];
@@ -183,7 +216,6 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
     }
   }
 
-  totals.runningBalance = runningBalance;
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setIsScrolled((e.target as HTMLDivElement).scrollLeft > 10);
@@ -296,7 +328,6 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
         {viewMode === 'table' ? (
           <div
             className={`h-full overflow-auto ledger-scroll ${isScrolled ? 'scroll-shadow-left' : ''}`}
-            ref={scrollContainerRef}
             onScroll={handleScroll}
           >
             <table className="w-full min-w-max border-collapse border-b border-slate-800 text-xs md:text-[13px] bg-white">
@@ -329,22 +360,34 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
                       <td className="hidden"></td>
                     )}
 
-                    <td
-                      className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#A3EBE4] transition-colors truncate max-w-[110px] md:max-w-[160px]"
-                      onClick={() => openModal('expense', r.dateStr, r.exp)}
-                      title={r.exp?.description}
-                    >
-                      {r.exp ? r.exp.description : null}
-                    </td>
-                    {allMethods.map(m => (
-                      <td 
-                        key={`ex-${r.index}-${m}`} 
-                        className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#A3EBE4] transition-colors"
-                        onClick={() => !r.exp && openModal('expense', r.dateStr)}
+                    {r.isExpStart ? (
+                      <td
+                        rowSpan={r.expSpan}
+                        className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#A3EBE4] transition-colors truncate max-w-[110px] md:max-w-[160px] align-middle"
+                        onClick={() => openModal('expense', r.dateStr, r.exp)}
+                        title={r.exp?.description}
                       >
-                        {r.exp?.payment_method === m ? r.exp.amount.toLocaleString() : ''}
+                        {r.exp ? r.exp.description : null}
                       </td>
+                    ) : (
+                      r.expSpan === undefined ? null : <td className="hidden"></td>
+                    )}
+
+                    {allMethods.map(m => (
+                      r.isExpStart ? (
+                        <td 
+                          key={`ex-${r.index}-${m}`} 
+                          rowSpan={r.expSpan}
+                          className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#A3EBE4] transition-colors align-middle"
+                          onClick={() => !r.exp && openModal('expense', r.dateStr)}
+                        >
+                          {r.exp?.payment_method === m ? r.exp.amount.toLocaleString() : ''}
+                        </td>
+                      ) : (
+                        r.expSpan === undefined ? null : <td key={`ex-${r.index}-${m}`} className="hidden"></td>
+                      )
                     ))}
+
                     {r.isFirst ? (
                       <td rowSpan={r.rowCount} className="bg-[#E8EDF5] border-r-[4px] border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle text-slate-800">
                         {(r.dailyExpenseTotal || 0) > 0 ? (r.dailyExpenseTotal || 0).toLocaleString() : '0'}
@@ -353,21 +396,32 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
                       <td className="hidden"></td>
                     )}
 
-                    <td
-                      className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#F9EAB3] transition-colors truncate max-w-[110px] md:max-w-[160px]"
-                      onClick={() => openModal('cashin', r.dateStr, r.inc)}
-                      title={r.inc?.description}
-                    >
-                      {r.inc ? r.inc.description : null}
-                    </td>
-                    {allMethods.map(m => (
-                      <td 
-                        key={`in-${r.index}-${m}`} 
-                        className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#F9EAB3] transition-colors"
-                        onClick={() => !r.inc && openModal('cashin', r.dateStr)}
+                    {r.isIncStart ? (
+                      <td
+                        rowSpan={r.incSpan}
+                        className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#F9EAB3] transition-colors truncate max-w-[110px] md:max-w-[160px] align-middle"
+                        onClick={() => openModal('cashin', r.dateStr, r.inc)}
+                        title={r.inc?.description}
                       >
-                        {r.inc?.payment_method === m ? r.inc.amount.toLocaleString() : ''}
+                        {r.inc ? r.inc.description : null}
                       </td>
+                    ) : (
+                      r.incSpan === undefined ? null : <td className="hidden"></td>
+                    )}
+
+                    {allMethods.map(m => (
+                      r.isIncStart ? (
+                        <td 
+                          key={`in-${r.index}-${m}`} 
+                          rowSpan={r.incSpan}
+                          className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#F9EAB3] transition-colors align-middle"
+                          onClick={() => !r.inc && openModal('cashin', r.dateStr)}
+                        >
+                          {r.inc?.payment_method === m ? r.inc.amount.toLocaleString() : ''}
+                        </td>
+                      ) : (
+                        r.incSpan === undefined ? null : <td key={`in-${r.index}-${m}`} className="hidden"></td>
+                      )
                     ))}
                     {r.isFirst ? (
                       <td rowSpan={r.rowCount} className={`bg-[#E8EDF5] border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle ${(r.dayEndBalance || 0) < 0 ? 'text-red-600' : 'text-slate-800'}`}>
