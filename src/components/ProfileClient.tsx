@@ -118,7 +118,7 @@ export function ProfileClient({ user, paymentMethods }: ProfileClientProps) {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => setIsEditingProfile(false)}
-                    className="btn-secondary !px-5 !py-2.5 text-sm"
+                    className="btn-outline !px-5 !py-2.5 text-sm"
                   >
                     Cancel
                   </button>
@@ -202,7 +202,7 @@ export function ProfileClient({ user, paymentMethods }: ProfileClientProps) {
               setIsAddingMethod(!isAddingMethod);
               setNewMethodName('');
             }}
-            className="btn-primary !px-4 !py-2 !rounded-xl !text-xs !font-bold flex items-center gap-2"
+            className={`${isAddingMethod ? 'btn-outline' : 'btn-primary'} !px-4 !py-2 !rounded-xl !text-xs !font-bold flex items-center gap-2`}
           >
             {isAddingMethod ? (
               <>Cancel</>
@@ -236,7 +236,7 @@ export function ProfileClient({ user, paymentMethods }: ProfileClientProps) {
                   required
                 />
               </div>
-              <button type="submit" className="btn-success !py-3 w-full md:w-auto px-10">
+              <button type="submit" className="btn-primary !py-3 w-full md:w-auto px-10">
                 Save Method
               </button>
             </div>

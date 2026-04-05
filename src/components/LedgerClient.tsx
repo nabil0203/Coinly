@@ -482,7 +482,7 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
                             <div className="bg-green-50/30 p-2 rounded-lg border border-green-50 cursor-pointer" onClick={() => openModal('cashin', r.dateStr, r.inc)}>
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
-                                  <div className="card-label !text-green-500 text-[9px]">Income</div>
+                                  <div className="card-label !text-green-500 text-[9px]">Cash In</div>
                                   <div className="text-sm font-medium text-fintech-text-main">{r.inc.description}</div>
                                   <div className="text-[10px] text-fintech-text-muted">{r.inc.payment_method}</div>
                                 </div>
@@ -503,34 +503,37 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
         )}
       </div>
 
-      <div className="bg-white border-t border-fintech-border py-2 md:py-3 px-4 md:px-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-30 flex flex-wrap justify-between items-center gap-4">
-        <div className="flex gap-4 md:gap-8 flex-wrap">
+      <div className="bg-white border-t border-fintech-border py-2 px-3 md:px-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-30 flex items-center justify-between gap-2 md:gap-4 overflow-hidden">
+        {/* Left: Monthly Summary */}
+        <div className="flex gap-3 md:gap-8 border-r border-gray-200 pr-3 md:pr-8 h-full items-center shrink-0">
           <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] uppercase font-bold text-fintech-text-muted">Monthly Expense</span>
-            <span className="text-sm md:text-lg font-black text-fintech-expense-text">৳ {totals.exAll.toLocaleString()}</span>
+            <span className="text-[9px] md:text-[10px] uppercase font-bold text-fintech-text-muted leading-tight">Expense</span>
+            <span className="text-xs md:text-lg font-black text-fintech-expense-text">৳{totals.exAll.toLocaleString()}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] uppercase font-bold text-fintech-text-muted">Monthly Income</span>
-            <span className="text-sm md:text-lg font-black text-fintech-income-text">৳ {totals.inAll.toLocaleString()}</span>
+            <span className="text-[9px] md:text-[10px] uppercase font-bold text-fintech-text-muted leading-tight">Income</span>
+            <span className="text-xs md:text-lg font-black text-fintech-income-text">৳{totals.inAll.toLocaleString()}</span>
           </div>
         </div>
 
-        <div className="flex gap-4 md:gap-8 items-center flex-wrap">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:flex items-center gap-x-6 gap-y-2 border-r border-gray-200 pr-4 md:pr-8">
+        {/* Middle: Payment Methods - horizontal scroll on mobile to keep height constant */}
+        <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar border-r border-gray-200 px-2 md:px-8">
+          <div className="flex items-center gap-4 md:gap-8 justify-start md:justify-center">
             {paymentMethods.map(pm => (
-              <div key={`footer-pm-${pm._id || pm.id}`} className="flex flex-col items-start md:items-end">
-                <span className="text-[9px] md:text-xs uppercase font-bold text-fintech-text-muted">{pm.name}</span>
-                <span className="text-xs md:text-lg font-black text-fintech-text-main whitespace-nowrap">৳ {(Number(pm.balance) || 0).toLocaleString()}</span>
+              <div key={`footer-pm-${pm._id || pm.id}`} className="flex flex-col items-start md:items-end shrink-0">
+                <span className="text-[8px] md:text-xs uppercase font-bold text-fintech-text-muted leading-none mb-0.5">{pm.name}</span>
+                <span className="text-[11px] md:text-lg font-bold text-fintech-text-main whitespace-nowrap leading-none">৳{(Number(pm.balance) || 0).toLocaleString()}</span>
               </div>
             ))}
           </div>
+        </div>
 
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] md:text-xs uppercase font-bold text-fintech-primary">Total Available Balance</span>
-            <span className="text-lg md:text-3xl font-black text-fintech-text-main tracking-tight">
-              ৳ {paymentMethods.reduce((acc, pm) => acc + (Number(pm.balance) || 0), 0).toLocaleString()}
-            </span>
-          </div>
+        {/* Right: Total Balance */}
+        <div className="flex flex-col items-end pl-1 md:pl-0 shrink-0">
+          <span className="text-[10px] md:text-xs uppercase font-bold text-fintech-primary leading-tight">Total</span>
+          <span className="text-sm md:text-3xl font-black text-fintech-text-main tracking-tight leading-tight whitespace-nowrap">
+            ৳{paymentMethods.reduce((acc, pm) => acc + (Number(pm.balance) || 0), 0).toLocaleString()}
+          </span>
         </div>
       </div>
 

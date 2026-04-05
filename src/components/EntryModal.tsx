@@ -220,22 +220,22 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-      <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-xl' : 'max-w-3xl'} w-full max-h-[90vh] flex flex-col overflow-hidden transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[9999] p-4">
+      <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-2xl' : 'max-w-3xl'} w-full max-h-[90vh] flex flex-col overflow-hidden transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
         
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+        <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
           <div>
-            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${type === 'expense' ? 'bg-red-500' : 'bg-green-500'}`}></div>
               {isEditing ? 'Edit' : 'Add'} {type === 'expense' ? 'Expense' : 'Income'}
             </h3>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">
+            <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">
               {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}
             </p>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <div className="relative group">
               <input 
                 type="date" 
@@ -243,14 +243,14 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
-              <button type="button" className="p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-2xl transition-all border border-slate-100 shadow-sm flex items-center justify-center relative z-10">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <button type="button" className="p-2 sm:p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl sm:rounded-2xl transition-all border border-slate-100 shadow-sm flex items-center justify-center relative z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
                 </svg>
               </button>
             </div>
-            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button onClick={onClose} className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg sm:rounded-xl transition-all">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -259,14 +259,14 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
         
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 scrollbar-hide">
             {entries.map((entry, index) => (
-              <div key={index} className={`relative p-5 rounded-2xl bg-slate-50/50 border border-slate-100 group transition-all hover:bg-white hover:shadow-md ${index > 0 ? 'mt-4' : ''}`}>
+              <div key={index} className={`relative p-4 sm:p-5 rounded-2xl bg-slate-50/50 border-2 border-slate-200 group transition-all hover:bg-white hover:border-slate-300 hover:shadow-md ${index > 0 ? 'mt-4' : ''}`}>
                 {!isEditing && entries.length > 1 && (
                   <button 
                     type="button" 
                     onClick={() => handleRemoveEntry(index)}
-                    className="absolute -top-2 -right-2 bg-white text-slate-400 hover:text-red-500 rounded-full p-1 shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute -top-2 -right-2 bg-white text-slate-400 hover:text-red-500 rounded-full p-1.5 shadow-md border border-slate-100 opacity-100 transition-all z-10"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -279,7 +279,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Description</label>
                     <input 
                       type="text" 
-                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 placeholder:text-slate-300 font-medium"
+                      className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 placeholder:text-slate-300 font-medium"
                       value={entry.description} 
                       onChange={e => handleEntryChange(index, { description: e.target.value })} 
                       required 
@@ -293,7 +293,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                       <input 
                         type="number" 
                         step="1"
-                        className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-bold tabular-nums"
+                        className="w-full pl-8 pr-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-bold tabular-nums"
                         value={entry.amount} 
                         onChange={e => handleEntryChange(index, { amount: e.target.value })} 
                         required 
@@ -304,7 +304,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                   <div className="md:col-span-6 lg:col-span-3">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1 whitespace-nowrap overflow-hidden text-ellipsis">Method</label>
                     <select 
-                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
+                      className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
                       value={entry.payment_method} 
                       onChange={e => handleEntryChange(index, { payment_method: e.target.value })}
                     >
@@ -336,7 +336,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                             <button 
                                 type="button"
                                 onClick={() => setIsAddingContact(!isAddingContact)}
-                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                                className={`${isAddingContact ? 'bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg' : 'text-blue-600'} text-[10px] font-bold hover:opacity-80 transition-all`}
                             >
                                 {isAddingContact ? 'Cancel' : '+ New Person'}
                             </button>
@@ -358,7 +358,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                                     <button 
                                         type="button" 
                                         onClick={handleCreateContact}
-                                        className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-all h-full"
+                                        className="btn-primary !px-4 !py-1.5 !text-[10px] !rounded-lg"
                                     >
                                         Add
                                     </button>
@@ -369,7 +369,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                                 <div>
                                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Whom (Contact)</label>
                                     <select 
-                                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
+                                        className="w-full px-3 py-2 text-xs bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
                                         value={entry.iou_contact_id}
                                         onChange={e => handleEntryChange(index, { iou_contact_id: e.target.value })}
                                         required={entry.is_iou}
@@ -385,7 +385,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                                 <div>
                                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Action Type</label>
                                     <select 
-                                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
+                                        className="w-full px-3 py-2 text-xs bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
                                         value={`${entry.iou_type}_${entry.iou_action}`}
                                         onChange={e => {
                                             const [iType, iAction] = e.target.value.split('_');
@@ -414,7 +414,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                                 <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Details</label>
                                 <input 
                                     type="text" 
-                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm font-bold text-slate-700 placeholder:text-slate-300"
+                                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm font-bold text-slate-700 placeholder:text-slate-300"
                                     value={entry.iou_details}
                                     onChange={e => handleEntryChange(index, { iou_details: e.target.value })}
                                     placeholder="Specific notes e.g., For office lunch..."
@@ -444,34 +444,44 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
           </div>
           
           {/* Modal Footer */}
-          <div className="px-6 py-5 bg-slate-50 border-t border-slate-100 flex justify-between items-center shrink-0">
-            {isEditing ? (
-              <button 
-                type="button" 
-                onClick={handleDelete}
-                className="bg-[#EF233C] text-white font-bold py-2.5 px-5 rounded-2xl text-sm flex items-center gap-2 hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 active:scale-[0.98]"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Delete
-              </button>
-            ) : <div />}
-            
-            <div className="flex gap-3">
-              <button 
-                type="button" 
-                onClick={onClose} 
-                className="text-slate-500 font-bold py-2.5 px-6 rounded-2xl hover:bg-slate-200/50 transition-all"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                className={`text-white font-bold py-2.5 px-8 rounded-2xl shadow-xl transition-all active:scale-[0.98] ${type === 'expense' ? 'bg-[#EF233C] shadow-red-600/30 hover:bg-red-600' : 'bg-[#00B44A] shadow-green-600/30 hover:bg-green-600'}`}
-              >
-                {isEditing ? 'Save Changes' : `Add ${type === 'expense' ? 'Expense' : 'Income'}`}
-              </button>
+          <div className="px-5 py-4 sm:px-6 sm:py-5 bg-slate-50 border-t border-slate-100 shrink-0">
+            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center">
+              
+              {/* Primary Actions Group - Handled as part of grid on mobile, flex on desktop */}
+              <div className="contents sm:flex sm:order-2 sm:items-center sm:gap-3">
+                {/* Save Button - Top on mobile, right on desktop group */}
+                <button 
+                  type="submit" 
+                  className="col-span-2 order-1 sm:order-2 btn-primary !py-3 sm:!py-2.5 !px-8 !rounded-2xl !shadow-xl !text-sm sm:!text-base"
+                >
+                  {isEditing ? 'Save Changes' : `Add ${type === 'expense' ? 'Expense' : 'Income'}`}
+                </button>
+
+                {/* Cancel Button - Left on mobile row 2, left on desktop group */}
+                <button 
+                  type="button" 
+                  onClick={onClose} 
+                  className={`${isEditing ? 'col-span-1' : 'col-span-2'} order-2 sm:order-1 btn-outline !py-3 sm:!py-2.5 !px-6 !rounded-2xl !text-sm sm:!text-base`}
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {/* Delete Button - Right on mobile row 2, left on desktop */}
+              <div className={`${isEditing ? 'col-span-1 order-3' : 'hidden sm:block'} sm:order-1`}>
+                {isEditing && (
+                  <button 
+                    type="button" 
+                    onClick={handleDelete}
+                    className="w-full sm:w-auto btn-danger !py-3 sm:!py-2.5 !px-5 !rounded-2xl !text-sm flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </form>
