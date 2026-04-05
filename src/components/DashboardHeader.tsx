@@ -73,28 +73,32 @@ export function DashboardHeader({ username, balance }: { username: string; balan
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
-        <div className="md:hidden mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2">
+        <div className="absolute top-[calc(100%+12px)] right-4 w-60 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-3xl shadow-2xl p-2 md:hidden flex flex-col gap-1 items-end z-50 animate-fade-in animate-slide-in-top">
           <Link 
             href="/profile" 
-            className="px-4 py-2 hover:bg-slate-50 rounded-lg flex items-center gap-3"
+            className="px-4 py-3 hover:bg-slate-50 rounded-2xl flex items-center gap-3 text-right transition-all w-full justify-end border border-transparent hover:border-slate-100 group active:scale-95"
             onClick={() => setIsMenuOpen(false)}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Profile
+            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <span className="font-bold text-slate-700">Profile</span>
           </Link>
-          <form action={logoutAction}>
+          <form action={logoutAction} className="w-full flex justify-end">
             <button 
               type="submit"
-              className="px-4 py-2 hover:bg-red-50 text-red-600 rounded-lg flex items-center gap-3 text-left w-full"
+              className="px-4 py-3 hover:bg-red-50 text-red-600 rounded-2xl flex items-center gap-3 text-right transition-all w-full justify-end border border-transparent hover:border-red-100 group active:scale-95"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
+              <div className="w-8 h-8 rounded-lg bg-red-50/50 flex items-center justify-center text-red-400 group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </div>
+              <span className="font-bold">Logout</span>
             </button>
           </form>
         </div>
