@@ -18,6 +18,7 @@ interface IOUContactCardProps {
 
 interface Transaction {
   _id: string;
+  iou_type: string;
   iou_action: string;
   amount: number;
   details?: string;
@@ -66,7 +67,6 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
       return;
     }
 
-    // Fallback in case entry is not populated (string)
     const entryId = typeof tx.entry === 'object' && tx.entry !== null ? tx.entry._id : (typeof tx.entry === 'string' ? tx.entry : null);
     const entryType = typeof tx.entry === 'object' && tx.entry !== null ? tx.entry.type : null;
 
@@ -77,7 +77,6 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
 
     try {
       await deleteEntry((entryType as 'expense' | 'cashin') || 'expense', entryId);
-
       const data = await getContactHistory(contact._id);
       setHistory(data);
       router.refresh();
@@ -88,6 +87,10 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
 
   const currentBalance = iouType === 'receivable' ? contact.total_receivable : contact.total_debt;
   const labelColor = iouType === 'receivable' ? 'text-green-600' : 'text-red-600';
+  const dotColor = iouType === 'receivable' ? 'bg-green-600' : 'bg-red-600';
+
+  // Filter history to only show transactions belonging to this section
+  const filteredHistory = history.filter((tx) => !tx.iou_type || tx.iou_type === iouType);
 
   return (
     <div className={`rounded-3xl border border-fintech-border bg-white shadow-fintech-card overflow-hidden transition-all duration-300 ${isExpanded ? 'ring-2 ring-purple-500/20 shadow-xl' : 'hover:shadow-lg'}`}>
@@ -109,13 +112,8 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
         <div className="space-y-1.5 pr-8">
           <h4 className="text-xl font-bold text-slate-800 flex items-center gap-2 group-hover:text-purple-600 transition-colors">
             {contact.name}
-            <div className={`w-1.5 h-1.5 rounded-full ${labelColor}`}></div>
+            <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
           </h4>
-          <div className="flex items-center gap-2">
-            <div className="px-2 py-0.5 bg-slate-100 rounded text-[9px] font-black text-slate-500 uppercase tracking-tight">
-              {currentBalance === 0 ? 'Settled' : iouType === 'receivable' ? 'Active Collection' : 'Pending Debt'}
-            </div>
-          </div>
         </div>
         <div className="text-right flex items-center gap-3 sm:gap-4 shrink-0">
           <div className="flex flex-col items-end">
@@ -136,88 +134,89 @@ export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
       {isExpanded && (
         <div className="px-6 pb-6 md:px-8 md:pb-8 border-t border-slate-50 bg-slate-50/30 animate-in slide-in-from-top-4 duration-300">
           <div className="pt-6 space-y-4">
-            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Transaction History</h5>
+            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">History</h5>
 
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
               </div>
-            ) : history.length > 0 ? (
+            ) : filteredHistory.length > 0 ? (
               <div className="space-y-3">
-                {history.map((tx: Transaction) => {
+                {filteredHistory.map((tx) => {
                   const isOutflow = (iouType === 'receivable' && tx.iou_action === 'create') || (iouType === 'debt' && tx.iou_action === 'repay');
                   const amountColor = isOutflow ? 'text-red-500' : 'text-blue-500';
                   const sign = isOutflow ? '-' : '+';
-                  
+
                   return (
-                  <div key={tx._id} className="bg-white border border-slate-100 rounded-[1.25rem] p-3 sm:p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group/row relative overflow-hidden">
-                    <div className={`absolute top-0 left-0 w-1 h-full ${isOutflow ? 'bg-red-500' : 'bg-blue-500'} opacity-50`}></div>
-                    
-                    <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
-                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${isOutflow ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                        {isOutflow ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
-                          </svg>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                          </svg>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col gap-0.5 sm:gap-1">
-                          {tx.details && (
-                            <p className="text-sm sm:text-lg font-black text-slate-800 leading-tight tracking-tight truncate">
-                              {tx.details}
-                            </p>
+                    <div key={tx._id} className="bg-white border border-slate-100 rounded-[1.25rem] p-3 sm:p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-300 group/row relative overflow-hidden">
+                      <div className={`absolute top-0 left-0 w-1 h-full ${isOutflow ? 'bg-red-500' : 'bg-blue-500'} opacity-50`}></div>
+
+                      <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${isOutflow ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                          {isOutflow ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                            </svg>
                           )}
-                          <div className="flex items-center mt-1">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50/80 shadow-sm">
-                               <span className="text-[10px] sm:text-xs text-slate-600 font-bold whitespace-nowrap">
-                                 {formatDate(tx.date)}
-                               </span>
-                               {typeof tx.entry === 'object' && tx.entry?.payment_method && (
-                                 <>
-                                   <span className="text-[10px] text-slate-300">•</span>
-                                   <span className="text-[9px] sm:text-[10px] text-slate-500 font-black uppercase tracking-tight">{tx.entry.payment_method}</span>
-                                 </>
-                               )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col gap-0.5 sm:gap-1">
+                            {tx.details && (
+                              <p className="text-sm sm:text-lg font-black text-slate-800 leading-tight tracking-tight truncate">
+                                {tx.details}
+                              </p>
+                            )}
+                            <div className="flex items-center mt-1">
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50/80 shadow-sm">
+                                <span className="text-[10px] sm:text-xs text-slate-600 font-bold whitespace-nowrap">
+                                  {formatDate(tx.date)}
+                                </span>
+                                {typeof tx.entry === 'object' && tx.entry?.payment_method && (
+                                  <>
+                                    <span className="text-[10px] text-slate-300">•</span>
+                                    <span className="text-[9px] sm:text-[10px] text-slate-500 font-black uppercase tracking-tight">{tx.entry.payment_method}</span>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex flex-col items-end gap-0.5 sm:gap-1 ml-4 shrink-0">
-                      <span className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest ${isOutflow ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                        {iouType === 'receivable' 
-                          ? (tx.iou_action === 'create' ? 'Lent' : 'Returned')
-                          : (tx.iou_action === 'create' ? 'Loaned' : 'Paid Off')
-                        }
-                      </span>
-                      <p className={`text-base sm:text-2xl font-black tabular-nums transition-transform group-hover:scale-105 origin-right flex items-center gap-0.5 ${amountColor}`}>
-                        {sign} <span className="text-sm sm:text-xl">৳</span> 
-                        {tx.amount.toLocaleString()}
-                      </p>
-                    </div>
 
-                    <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(tx);
-                      }}
-                      className="absolute top-1 right-2 p-1.5 text-slate-300 hover:text-red-500 transition-all opacity-0 group-hover/row:opacity-100"
-                      title="Delete Record"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                )})}
+                      <div className="flex flex-col items-end gap-0.5 sm:gap-1 ml-4 shrink-0">
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest ${isOutflow ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {iouType === 'receivable'
+                            ? (tx.iou_action === 'create' ? 'Lent' : 'Returned')
+                            : (tx.iou_action === 'create' ? 'Loaned' : 'Paid Off')
+                          }
+                        </span>
+                        <p className={`text-base sm:text-2xl font-black tabular-nums transition-transform group-hover/row:scale-105 origin-right flex items-center gap-0.5 ${amountColor}`}>
+                          {sign} <span className="text-sm sm:text-xl">৳</span>
+                          {tx.amount.toLocaleString()}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(tx);
+                        }}
+                        className="absolute top-1 right-2 p-1.5 text-slate-300 hover:text-red-500 transition-all opacity-0 group-hover/row:opacity-100"
+                        title="Delete Record"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="py-8 text-center bg-white/50 rounded-2xl border border-dashed border-slate-200">

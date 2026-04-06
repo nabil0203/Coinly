@@ -261,7 +261,7 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
       <div className="px-4 md:px-10 py-2 bg-white border-b border-fintech-border flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar">
           <h2 className="text-sm md:text-base font-bold text-fintech-text-main flex items-center gap-2 whitespace-nowrap">
-            <div className="w-2 h-6 bg-fintech-primary rounded-full"></div>
+            <span className="w-2 h-6 bg-fintech-primary rounded-full"></span>
             <span>Monthly Ledger</span>
           </h2>
 
@@ -507,11 +507,11 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
         {/* Left: Monthly Summary */}
         <div className="flex gap-3 md:gap-8 border-r border-gray-200 pr-3 md:pr-8 h-full items-center shrink-0">
           <div className="flex flex-col">
-            <span className="text-[9px] md:text-[10px] uppercase font-bold text-fintech-text-muted leading-tight">Expense</span>
+            <span className="text-[9px] md:text-[10px] uppercase font-bold text-fintech-text-muted leading-tight">{monthName} Expense</span>
             <span className="text-xs md:text-lg font-black text-fintech-expense-text">৳{totals.exAll.toLocaleString()}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[9px] md:text-[10px] uppercase font-bold text-fintech-text-muted leading-tight">Income</span>
+            <span className="text-[9px] md:text-[10px] uppercase font-bold text-fintech-text-muted leading-tight">{monthName} Cash In</span>
             <span className="text-xs md:text-lg font-black text-fintech-income-text">৳{totals.inAll.toLocaleString()}</span>
           </div>
         </div>
