@@ -3,8 +3,9 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import { getCurrentUser } from '@/lib/auth';
-import { ProfileSchema } from '@/lib/validations';
+import { ProfileSchema, ChangePasswordSchema } from '@/lib/validations';
 import { revalidatePath } from 'next/cache';
+import bcrypt from 'bcryptjs';
 
 export async function updateProfileAction(data: {
   username?: string;
@@ -39,5 +40,32 @@ export async function updateProfileAction(data: {
     return { success: true };
   } catch (error: unknown) {
     return { error: (error as Error).message || 'Profile update failed' };
+  }
+}
+
+export async function changePasswordAction(data: unknown) {
+  await dbConnect();
+  const authUser = await getCurrentUser();
+  if (!authUser) return { error: 'Authentication required' };
+
+  try {
+    const user = await User.findById(authUser.userId);
+    if (!user) return { error: 'User not found' };
+
+    const parsed = ChangePasswordSchema.safeParse(data);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+    const { currentPassword, newPassword } = parsed.data;
+
+    if (!(await bcrypt.compare(currentPassword, user.password))) {
+      return { error: 'Incorrect current password' };
+    }
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    await user.save();
+
+    return { success: true };
+  } catch (error: unknown) {
+    return { error: (error as Error).message || 'Failed to change password' };
   }
 }
