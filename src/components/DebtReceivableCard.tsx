@@ -11,7 +11,7 @@ interface IOUContact {
   total_debt: number;
 }
 
-interface IOUContactCardProps {
+interface DebtReceivableCardProps {
   contact: IOUContact;
   iouType: 'receivable' | 'debt';
 }
@@ -37,7 +37,7 @@ const formatDate = (dateString: string) => {
   return `${day} ${month} ${year}`;
 };
 
-export function IOUContactCard({ contact, iouType }: IOUContactCardProps) {
+export function DebtReceivableCard({ contact, iouType }: DebtReceivableCardProps) {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [history, setHistory] = useState<Transaction[]>([]);

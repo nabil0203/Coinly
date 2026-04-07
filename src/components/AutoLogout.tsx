@@ -6,9 +6,14 @@ import { logoutAction } from '@/app/actions/auth';
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export function AutoLogout() {
-  const lastActivityDate = useRef(Date.now());
+  const lastActivityDate = useRef<number>(0);
 
   useEffect(() => {
+    // Initialize
+    if (lastActivityDate.current === 0) {
+      lastActivityDate.current = Date.now();
+    }
+
     // Reset the inactivity timer
     const resetTimer = () => {
       lastActivityDate.current = Date.now();

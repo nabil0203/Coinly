@@ -4,13 +4,9 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EntryModal } from './EntryModal';
 import { addEntry, updateEntry, deleteEntry, type EntryPayload } from '@/app/actions/ledger';
-
-interface LedgerEntry {
-  _id?: string;
-  description: string;
-  amount: number | string;
-  payment_method: string;
-}
+import { LedgerEntry, LedgerRow } from './ledger/types';
+import { LedgerTable } from './ledger/LedgerTable';
+import { LedgerCards } from './ledger/LedgerCards';
 
 interface LedgerClientProps {
   initialData: {
@@ -21,26 +17,6 @@ interface LedgerClientProps {
   paymentMethods: { _id?: string; id?: string; name: string; balance: number }[];
   initialMonth: number;
   initialYear: number;
-}
-
-
-interface LedgerRow {
-  isFirst: boolean;
-  isLast: boolean;
-  day: number;
-  dayName: string;
-  dateStr: string;
-  rowCount: number;
-  exp: LedgerEntry | null;
-  inc: LedgerEntry | null;
-  currentBalance: number;
-  dailyExpenseTotal?: number;
-  dayEndBalance?: number;
-  index: number;
-  expSpan?: number;
-  incSpan?: number;
-  isExpStart?: boolean;
-  isIncStart?: boolean;
 }
 
 const getDaysInMonth = (year: number, month: number) => {
@@ -326,180 +302,21 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
 
       <div className="flex-1 overflow-hidden relative">
         {viewMode === 'table' ? (
-          <div
-            className={`h-full overflow-auto ledger-scroll ${isScrolled ? 'scroll-shadow-left' : ''}`}
-            onScroll={handleScroll}
-          >
-            <table className="w-full min-w-max border-collapse border-b border-slate-800 text-xs md:text-[13px] bg-white">
-              <thead className="sticky top-0 z-40 bg-white shadow-sm ring-1 ring-slate-800">
-                <tr className="divide-x divide-slate-400 border-b border-slate-800 text-sm md:text-[15px]">
-                  <th className="sticky left-0 z-50 bg-white border-r border-slate-800 px-1 py-3 md:px-1 md:py-4 text-center font-bold">Date</th>
-                  <th className="bg-[#4CE0D2] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400">Expense Details</th>
-                  {allMethods.map(m => (
-                    <th key={`ex-h-${m}`} className="bg-[#4CE0D2] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400 whitespace-nowrap">{m}</th>
-                  ))}
-                  <th className="bg-[#7895CB] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-800">Total Cost</th>
-                  <th className="bg-[#F4D160] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400">Cash In Details</th>
-                  {allMethods.map(m => (
-                    <th key={`in-h-${m}`} className="bg-[#F4D160] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400 whitespace-nowrap">{m}</th>
-                  ))}
-                  <th className="bg-[#7895CB] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-800 text-white !text-black">Total Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.index} className={`group hover:bg-slate-200/50 transition-colors divide-x divide-slate-400 ${r.isLast ? 'border-b border-slate-800' : 'border-b border-slate-300'}`}>
-                    {r.isFirst ? (
-                      <td rowSpan={r.rowCount} className="sticky left-0 z-30 bg-white border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center align-middle font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-slate-800">
-                        <div className="flex flex-col items-center justify-center leading-tight">
-                          <span className="text-sm md:text-base font-black">{String(r.day).padStart(2, '0')}</span>
-                          <span className="text-xs md:text-sm font-semibold text-slate-500 tracking-tight">{monthName}</span>
-                        </div>
-                      </td>
-                    ) : (
-                      <td className="hidden"></td>
-                    )}
-
-                    {r.isExpStart ? (
-                      <td
-                        rowSpan={r.expSpan}
-                        className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#A3EBE4] transition-colors truncate max-w-[110px] md:max-w-[160px] align-middle"
-                        onClick={() => openModal('expense', r.dateStr, r.exp)}
-                        title={r.exp?.description}
-                      >
-                        {r.exp ? r.exp.description : null}
-                      </td>
-                    ) : (
-                      r.expSpan === undefined ? null : <td className="hidden"></td>
-                    )}
-
-                    {allMethods.map(m => (
-                      r.isExpStart ? (
-                        <td 
-                          key={`ex-${r.index}-${m}`} 
-                          rowSpan={r.expSpan}
-                          className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#A3EBE4] transition-colors align-middle"
-                          onClick={() => !r.exp && openModal('expense', r.dateStr)}
-                        >
-                          {r.exp?.payment_method === m ? r.exp.amount.toLocaleString() : ''}
-                        </td>
-                      ) : (
-                        r.expSpan === undefined ? null : <td key={`ex-${r.index}-${m}`} className="hidden"></td>
-                      )
-                    ))}
-
-                    {r.isFirst ? (
-                      <td rowSpan={r.rowCount} className="bg-[#E8EDF5] border-r-[4px] border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle text-slate-800">
-                        {(r.dailyExpenseTotal || 0) > 0 ? (r.dailyExpenseTotal || 0).toLocaleString() : '0'}
-                      </td>
-                    ) : (
-                      <td className="hidden"></td>
-                    )}
-
-                    {r.isIncStart ? (
-                      <td
-                        rowSpan={r.incSpan}
-                        className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#F9EAB3] transition-colors truncate max-w-[110px] md:max-w-[160px] align-middle"
-                        onClick={() => openModal('cashin', r.dateStr, r.inc)}
-                        title={r.inc?.description}
-                      >
-                        {r.inc ? r.inc.description : null}
-                      </td>
-                    ) : (
-                      r.incSpan === undefined ? null : <td className="hidden"></td>
-                    )}
-
-                    {allMethods.map(m => (
-                      r.isIncStart ? (
-                        <td 
-                          key={`in-${r.index}-${m}`} 
-                          rowSpan={r.incSpan}
-                          className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#F9EAB3] transition-colors align-middle"
-                          onClick={() => !r.inc && openModal('cashin', r.dateStr)}
-                        >
-                          {r.inc?.payment_method === m ? r.inc.amount.toLocaleString() : ''}
-                        </td>
-                      ) : (
-                        r.incSpan === undefined ? null : <td key={`in-${r.index}-${m}`} className="hidden"></td>
-                      )
-                    ))}
-                    {r.isFirst ? (
-                      <td rowSpan={r.rowCount} className={`bg-[#E8EDF5] border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle ${(r.dayEndBalance || 0) < 0 ? 'text-red-600' : 'text-slate-800'}`}>
-                        {(r.dayEndBalance || 0).toLocaleString()}
-                      </td>
-                    ) : (
-                      <td className="hidden"></td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <LedgerTable 
+            rows={rows} 
+            allMethods={allMethods} 
+            monthName={monthName} 
+            isScrolled={isScrolled} 
+            handleScroll={handleScroll} 
+            openModal={openModal} 
+          />
         ) : (
-          <div className="h-full overflow-y-auto w-full flex justify-center px-4 py-4">
-            <div className="space-y-4 max-w-xl w-full">
-              {Array.from(new Set(rows.filter(r => r.exp || r.inc).map(r => r.day))).map(dayNum => {
-                const dayRows = rows.filter(r => r.day === dayNum && (r.exp || r.inc));
-                const first = dayRows[0];
-                const last = dayRows[dayRows.length - 1];
-  
-                return (
-                  <div key={`card-${dayNum}`} className="ledger-card !mb-0">
-                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
-                      <div className="flex items-center gap-2">
-                        <span className="w-8 h-8 bg-fintech-primary text-white rounded-lg flex items-center justify-center font-bold text-sm">
-                          {first.day}
-                        </span>
-                        <div>
-                          <div className="text-xs font-bold text-fintech-text-main">{first.dayName}</div>
-                          <div className="text-[10px] text-fintech-text-muted">{String(first.day).padStart(2, '0')} {monthName.substring(0, 3)} {year}</div>
-                        </div>
-                      </div>
-                      <div className={`text-sm font-black ${last.currentBalance < 0 ? 'text-red-600' : 'text-fintech-primary'}`}>
-                        ৳ {last.currentBalance.toLocaleString()}
-                      </div>
-                    </div>
-  
-                    <div className="space-y-2">
-                      {dayRows.map((r, idx) => (
-                        <React.Fragment key={`entry-${idx}`}>
-                          {r.exp && (
-                            <div className="bg-red-50/30 p-2 rounded-lg border border-red-50 cursor-pointer" onClick={() => openModal('expense', r.dateStr, r.exp)}>
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="card-label !text-red-500 text-[9px]">Expense</div>
-                                  <div className="text-sm font-medium text-fintech-text-main">{r.exp.description}</div>
-                                  <div className="text-[10px] text-fintech-text-muted">{r.exp.payment_method}</div>
-                                </div>
-                                <div className="text-sm font-bold text-fintech-expense-text">
-                                  - ৳ {Number(r.exp.amount).toLocaleString()}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-  
-                          {r.inc && (
-                            <div className="bg-green-50/30 p-2 rounded-lg border border-green-50 cursor-pointer" onClick={() => openModal('cashin', r.dateStr, r.inc)}>
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="card-label !text-green-500 text-[9px]">Cash In</div>
-                                  <div className="text-sm font-medium text-fintech-text-main">{r.inc.description}</div>
-                                  <div className="text-[10px] text-fintech-text-muted">{r.inc.payment_method}</div>
-                                </div>
-                                <div className="text-sm font-bold text-fintech-income-text">
-                                  + ৳ {Number(r.inc.amount).toLocaleString()}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <LedgerCards 
+            rows={rows} 
+            year={year} 
+            monthName={monthName} 
+            openModal={openModal} 
+          />
         )}
       </div>
 

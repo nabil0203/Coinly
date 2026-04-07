@@ -2,7 +2,7 @@ import React from 'react';
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getIOUContacts } from '@/app/actions/iou';
-import { IOUContactCard } from '@/components/IOUContactCard';
+import { DebtReceivableCard } from '@/components/DebtReceivableCard';
 
 interface IOUContactType {
   _id: string;
@@ -79,7 +79,7 @@ export default async function DebtsPage() {
             <div className="space-y-6">
               {myDebts.length > 0 ? (
                 myDebts.map((contact: IOUContactType) => (
-                  <IOUContactCard key={contact._id} contact={contact} iouType="debt" />
+                  <DebtReceivableCard key={contact._id} contact={contact} iouType="debt" />
                 ))
               ) : (
                 <div className="bg-white border border-fintech-border rounded-[2rem] py-20 px-10 text-center space-y-4 shadow-fintech-card">
@@ -105,7 +105,7 @@ export default async function DebtsPage() {
             <div className="space-y-6">
               {myReceivables.length > 0 ? (
                 myReceivables.map((contact: IOUContactType) => (
-                  <IOUContactCard key={contact._id} contact={contact} iouType="receivable" />
+                  <DebtReceivableCard key={contact._id} contact={contact} iouType="receivable" />
                 ))
               ) : (
                 <div className="bg-white border border-fintech-border rounded-[2rem] py-20 px-10 text-center space-y-4 shadow-fintech-card">
