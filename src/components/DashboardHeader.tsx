@@ -8,11 +8,11 @@ import { logoutAction } from '@/app/actions/auth';
 export function DashboardHeader({ username, balance }: { username: string; balance?: number }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-  const isLedgerPage = pathname === '/ledger';
+  const isFullWidthPage = pathname === '/ledger' || pathname === '/profile';
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm px-4 md:px-10 py-3 md:py-5">
-      <div className={`${isLedgerPage ? 'max-w-full' : 'max-w-7xl mx-auto'} flex items-center justify-between`}>
+      <div className={`${isFullWidthPage ? 'max-w-full' : 'max-w-7xl mx-auto'} flex items-center justify-between`}>
         
         {/* Left: Branding */}
         <Link href="/" className="flex items-center gap-3 group">
