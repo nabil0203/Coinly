@@ -3,6 +3,7 @@ import { DashboardHeader } from '@/components/DashboardHeader';
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getPaymentMethods } from '@/app/actions/payment';
+import { AutoLogout } from '@/components/AutoLogout';
 
 export default async function DashboardLayout({
   children,
@@ -22,6 +23,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex flex-col h-[100dvh] bg-slate-50 text-slate-900 overflow-hidden">
+      <AutoLogout />
       <DashboardHeader username={user.username} balance={totalBalance} />
       <main className="flex-1 overflow-hidden">
         <div className="h-full">

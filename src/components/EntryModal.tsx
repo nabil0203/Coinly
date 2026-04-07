@@ -31,8 +31,8 @@ interface EditingEntry {
 interface EntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[], id?: string) => void;
-  onDelete?: (type: 'expense' | 'cashin', id: string) => void;
+  onSubmit: (type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[], id?: string) => Promise<void> | void;
+  onDelete?: (type: 'expense' | 'cashin', id: string) => Promise<void> | void;
   type: 'expense' | 'cashin';
   dateStr: string;
   paymentMethods: { _id?: string; id?: string; name: string; balance: number }[];
@@ -54,6 +54,8 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
   const [iouContacts, setIouContacts] = useState<Record<string, unknown>[]>([]);
   const [newContactName, setNewContactName] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isEditing = !!editEntry;
   const defaultMethod = paymentMethods.length > 0 ? paymentMethods[0].name : 'Cash';
@@ -160,7 +162,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (type === 'expense') {
@@ -205,17 +207,27 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
         return payload;
     };
 
-    if (isEditing && editEntry?._id) {
-      onSubmit(type, mapEntryToPayload(entries[0]), editEntry._id);
-    } else {
-      const payloads = entries.map((entry: Entry) => mapEntryToPayload(entry));
-      onSubmit(type, payloads);
+    setIsSubmitting(true);
+    try {
+      if (isEditing && editEntry?._id) {
+        await onSubmit(type, mapEntryToPayload(entries[0]), editEntry._id);
+      } else {
+        const payloads = entries.map((entry: Entry) => mapEntryToPayload(entry));
+        await onSubmit(type, payloads);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (onDelete && editEntry?._id && window.confirm('Delete this entry?')) {
-      onDelete(type, editEntry._id);
+      setIsDeleting(true);
+      try {
+        await onDelete(type, editEntry._id);
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -228,7 +240,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
           <div>
             <h3 className="text-base sm:text-xl font-bold text-slate-800 flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${type === 'expense' ? 'bg-red-500' : 'bg-green-500'}`}></div>
-              {isEditing ? 'Edit' : 'Add'} {type === 'expense' ? 'Expense' : 'Income'}
+              {isEditing ? 'Edit' : 'Add'} {type === 'expense' ? 'Expense' : 'Money'}
             </h3>
             <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">
               {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}
@@ -478,16 +490,28 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                 {/* Save Button - Top on mobile, right on desktop group */}
                 <button 
                   type="submit" 
-                  className="col-span-2 order-1 sm:order-2 btn-primary !py-3 sm:!py-2.5 !px-8 !rounded-2xl !shadow-xl !text-sm sm:!text-base"
+                  disabled={isSubmitting || isDeleting}
+                  className="col-span-2 order-1 sm:order-2 btn-primary !py-3 sm:!py-2.5 !px-8 !rounded-2xl !shadow-xl !text-sm sm:!text-base flex items-center justify-center disabled:opacity-80 disabled:cursor-wait"
                 >
-                  {isEditing ? 'Save Changes' : `Add ${type === 'expense' ? 'Expense' : 'Income'}`}
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {isEditing ? 'Saving...' : 'Adding...'}
+                    </>
+                  ) : (
+                    isEditing ? 'Save Changes' : `Add ${type === 'expense' ? 'Expense' : 'Money'}`
+                  )}
                 </button>
 
                 {/* Cancel Button - Left on mobile row 2, left on desktop group */}
                 <button 
                   type="button" 
                   onClick={onClose} 
-                  className={`${isEditing ? 'col-span-1' : 'col-span-2'} order-2 sm:order-1 btn-outline !py-3 sm:!py-2.5 !px-6 !rounded-2xl !text-sm sm:!text-base`}
+                  disabled={isSubmitting || isDeleting}
+                  className={`${isEditing ? 'col-span-1' : 'col-span-2'} order-2 sm:order-1 btn-outline !py-3 sm:!py-2.5 !px-6 !rounded-2xl !text-sm sm:!text-base disabled:opacity-80`}
                 >
                   Cancel
                 </button>
@@ -499,12 +523,25 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                   <button 
                     type="button" 
                     onClick={handleDelete}
-                    className="w-full sm:w-auto btn-danger !py-3 sm:!py-2.5 !px-5 !rounded-2xl !text-sm flex items-center justify-center gap-2"
+                    disabled={isSubmitting || isDeleting}
+                    className="w-full sm:w-auto btn-danger !py-3 sm:!py-2.5 !px-5 !rounded-2xl !text-sm flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-wait"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Delete
+                    {isDeleting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                      </>
+                    )}
                   </button>
                 )}
               </div>
