@@ -220,13 +220,13 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[9999] px-4 pt-16 pb-4 sm:p-4">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[9999] px-4 pt-20 pb-4 sm:p-4">
       <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-2xl' : 'max-w-3xl'} w-full max-h-[82vh] sm:max-h-[88vh] flex flex-col overflow-hidden transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
         
         {/* Modal Header */}
-        <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+        <div className="px-4 py-3 sm:px-6 sm:py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
           <div>
-            <h3 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+            <h3 className="text-base sm:text-xl font-bold text-slate-800 flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${type === 'expense' ? 'bg-red-500' : 'bg-green-500'}`}></div>
               {isEditing ? 'Edit' : 'Add'} {type === 'expense' ? 'Expense' : 'Income'}
             </h3>
@@ -259,9 +259,9 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
         
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-6 space-y-3 sm:space-y-6 scrollbar-hide">
             {entries.map((entry, index) => (
-              <div key={index} className={`relative p-4 sm:p-5 rounded-2xl bg-slate-50/50 border-2 border-slate-200 group transition-all hover:bg-white hover:border-slate-300 hover:shadow-md ${index > 0 ? 'mt-4' : ''}`}>
+              <div key={index} className={`relative p-3 sm:p-5 rounded-2xl bg-slate-50/50 border-2 border-slate-200 group transition-all hover:bg-white hover:border-slate-300 hover:shadow-md ${index > 0 ? 'mt-3' : ''}`}>
                 {!isEditing && entries.length > 1 && (
                   <button 
                     type="button" 
@@ -274,26 +274,26 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                   </button>
                 )}
                 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                  <div className="md:col-span-12 lg:col-span-6">
+                <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-5">
+                  <div className="col-span-2 md:col-span-12 lg:col-span-6">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Description</label>
                     <input 
                       type="text" 
-                      className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 placeholder:text-slate-300 font-medium"
+                      className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 placeholder:text-slate-300 font-medium text-sm sm:text-base"
                       value={entry.description} 
                       onChange={e => handleEntryChange(index, { description: e.target.value })} 
                       required 
                       placeholder="What was this for?"
                     />
                   </div>
-                  <div className="md:col-span-6 lg:col-span-3">
+                  <div className="col-span-2 md:col-span-6 lg:col-span-3">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Amount</label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">৳</span>
                       <input 
                         type="number" 
                         step="1"
-                        className="w-full pl-8 pr-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-bold tabular-nums"
+                        className="w-full pl-8 pr-4 py-2 sm:py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-bold tabular-nums text-sm sm:text-base"
                         value={entry.amount} 
                         onChange={e => handleEntryChange(index, { amount: e.target.value })} 
                         required 
@@ -301,10 +301,10 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                       />
                     </div>
                   </div>
-                  <div className="md:col-span-6 lg:col-span-3">
+                  <div className="col-span-1 md:col-span-6 lg:col-span-3">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1 whitespace-nowrap overflow-hidden text-ellipsis">Method</label>
                     <select 
-                      className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
+                      className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium text-sm sm:text-base"
                       value={entry.payment_method} 
                       onChange={e => handleEntryChange(index, { payment_method: e.target.value })}
                     >
@@ -318,11 +318,25 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                       )}
                     </select>
                   </div>
+
+                  {/* Debt/Loan checkbox — mobile only, beside Method */}
+                  <div className="col-span-1 md:hidden flex items-center justify-start pl-2 pt-4">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all"
+                        checked={entry.is_iou}
+                        onChange={e => handleEntryChange(index, { is_iou: e.target.checked })}
+                      />
+                      <span className="text-xs font-bold text-slate-500 group-hover:text-slate-800 transition-colors uppercase tracking-tight">Debt / Loan?</span>
+                    </label>
+                  </div>
                 </div>
 
                 {/* IOU Section */}
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                    <div className="flex items-center justify-between mb-3">
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                    {/* Checkbox row — hidden on mobile (checkbox is in the grid above) */}
+                    <div className="hidden md:flex items-center justify-between mb-3">
                         <label className="flex items-center gap-2 cursor-pointer group">
                             <input 
                                 type="checkbox" 
@@ -342,6 +356,18 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
                             </button>
                         )}
                     </div>
+                    {/* Mobile-only: show + New Person button when IOU is checked */}
+                    {entry.is_iou && (
+                        <div className="flex md:hidden justify-end mb-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsAddingContact(!isAddingContact)}
+                                className={`${isAddingContact ? 'bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg' : 'text-blue-600'} text-[10px] font-bold hover:opacity-80 transition-all`}
+                            >
+                                {isAddingContact ? 'Cancel' : '+ New Person'}
+                            </button>
+                        </div>
+                    )}
 
                     {entry.is_iou && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -444,7 +470,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
           </div>
           
           {/* Modal Footer */}
-          <div className="px-5 py-4 sm:px-6 sm:py-5 bg-slate-50 border-t border-slate-100 shrink-0">
+          <div className="px-4 py-3 sm:px-6 sm:py-5 bg-slate-50 border-t border-slate-100 shrink-0">
             <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center">
               
               {/* Primary Actions Group - Handled as part of grid on mobile, flex on desktop */}
