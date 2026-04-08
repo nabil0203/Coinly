@@ -5,12 +5,12 @@ import { ProfileInformation, ProfileUser, PaymentMethodType } from './profile/Pr
 import { AccountSettings } from './profile/AccountSettings';
 import { PaymentMethodsSettings } from './profile/PaymentMethodsSettings';
 
-interface ProfileClientProps {
+interface ProfileProps {
   user: ProfileUser;
   paymentMethods: PaymentMethodType[];
 }
 
-export function ProfileClient({ user, paymentMethods }: ProfileClientProps) {
+export function Profile({ user, paymentMethods }: ProfileProps) {
   // Layout State
   const [activeTab, setActiveTab] = useState<'profile' | 'account' | 'payment'>('profile');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

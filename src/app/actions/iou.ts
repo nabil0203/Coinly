@@ -81,7 +81,7 @@ export async function deleteIOUContact(contactId: string) {
     await IOUTransaction.deleteMany({ contact: contactId, user: user.userId });
     await IOUContact.deleteOne({ _id: contactId, user: user.userId });
 
-    revalidatePath('/', 'layout'); // Invalidates all routes so EntryModal contact lists refresh everywhere
+    revalidatePath('/', 'layout'); // Invalidates all routes so EntryForm contact lists refresh everywhere
     
     return { success: true };
   } catch (error: unknown) {

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { PaymentMethodsGrid } from './FinancialSummary';
-import { EntryModal } from './EntryModal';
+import { EntryForm } from './EntryForm';
 import Link from 'next/link';
 import { addEntry, type EntryPayload } from '@/app/actions/ledger';
 
@@ -13,12 +13,12 @@ interface PaymentMethodType {
   balance: number;
 }
 
-interface HomeClientProps {
+interface HomeProps {
   displayName: string;
   paymentMethods: PaymentMethodType[];
 }
 
-export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
+export function Home({ displayName, paymentMethods }: HomeProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'expense' | 'cashin'>('expense');
   const [targetDate, setTargetDate] = useState('');
@@ -171,7 +171,7 @@ export function HomeClient({ displayName, paymentMethods }: HomeClientProps) {
           </div>
         </div>
 
-        <EntryModal
+        <EntryForm
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           onSubmit={handleEntrySubmit}

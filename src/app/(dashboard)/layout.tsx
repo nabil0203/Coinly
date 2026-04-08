@@ -1,5 +1,5 @@
 import React from 'react';
-import { DashboardHeader } from '@/components/DashboardHeader';
+import { Header } from '@/components/Header';
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getPaymentMethods } from '@/app/actions/payment';
@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex flex-col h-[100dvh] bg-slate-50 text-slate-900 overflow-hidden">
       <AutoLogout />
-      <DashboardHeader username={user.username} balance={totalBalance} />
+      <Header username={user.username} balance={totalBalance} />
       <main className="flex-1 overflow-hidden">
         <div className="h-full">
           {children}

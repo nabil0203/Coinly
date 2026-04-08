@@ -18,7 +18,7 @@ interface EditingEntry {
   };
 }
 
-interface EntryModalProps {
+interface EntryFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[], id?: string) => Promise<void> | void;
@@ -29,7 +29,7 @@ interface EntryModalProps {
   editEntry?: EditingEntry | null;
 }
 
-export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr, paymentMethods, editEntry = null }: EntryModalProps) {
+export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, paymentMethods, editEntry = null }: EntryFormProps) {
   const [entries, setEntries] = useState<Entry[]>([{ 
     description: '', 
     amount: '', 
@@ -224,7 +224,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[9999] px-4 pt-20 pb-4 sm:p-4">
       <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-2xl' : 'max-w-3xl'} w-full max-h-[82vh] sm:max-h-[88vh] flex flex-col overflow-hidden transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
         
-        {/* Modal Header */}
+        {/* form Header */}
         <div className="px-4 py-3 sm:px-6 sm:py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
           <div>
             <h3 className="text-base sm:text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -258,7 +258,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
           </div>
         </div>
         
-        {/* Modal Body */}
+        {/* form Body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-6 space-y-3 sm:space-y-6 scrollbar-hide">
             {entries.map((entry, index) => (
@@ -297,7 +297,7 @@ export function EntryModal({ isOpen, onClose, onSubmit, onDelete, type, dateStr,
             )}
           </div>
           
-          {/* Modal Footer */}
+          {/* form Footer */}
           <div className="px-4 py-3 sm:px-6 sm:py-5 bg-slate-50 border-t border-slate-100 shrink-0">
             <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center">
               

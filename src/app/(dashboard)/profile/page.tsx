@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProfileClient } from '@/components/ProfileClient';
+import { Profile } from '@/components/Profile';
 import { getPaymentMethods } from '@/app/actions/payment';
 import { getCurrentUser } from '@/lib/auth';
 import dbConnect from '@/lib/db';
@@ -14,7 +14,7 @@ export default async function ProfilePage() {
   const paymentMethods = await getPaymentMethods();
 
   return (
-    <ProfileClient 
+    <Profile 
       user={JSON.parse(JSON.stringify(user))} 
       paymentMethods={paymentMethods} 
     />

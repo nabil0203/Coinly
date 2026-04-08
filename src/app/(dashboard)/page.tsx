@@ -1,5 +1,5 @@
 import React from 'react';
-import { HomeClient } from '@/components/HomeClient';
+import { Home } from '@/components/Home';
 import { getPaymentMethods } from '@/app/actions/payment';
 import { getCurrentUser } from '@/lib/auth';
 import dbConnect from '@/lib/db';
@@ -18,7 +18,7 @@ export default async function HomePage() {
   const displayName = user?.full_name || user?.username || 'Friend';
 
   return (
-    <HomeClient
+    <Home
       displayName={displayName}
       paymentMethods={paymentMethods}
     />

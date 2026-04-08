@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { EntryModal } from './EntryModal';
+import { EntryForm } from './EntryForm';
 import { addEntry, updateEntry, deleteEntry, type EntryPayload } from '@/app/actions/ledger';
 import { LedgerEntry, LedgerRow } from './ledger/types';
 import { LedgerTable } from './ledger/LedgerTable';
 import { LedgerCards } from './ledger/LedgerCards';
 
-interface LedgerClientProps {
+interface LedgerProps {
   initialData: {
     expenses: Record<string, LedgerEntry[]>;
     cashin: Record<string, LedgerEntry[]>;
@@ -34,7 +34,7 @@ function calculateSpans(entryCount: number, totalRows: number): number[] {
   return spans;
 }
 
-export function LedgerClient({ initialData, paymentMethods, initialMonth, initialYear }: LedgerClientProps) {
+export function Ledger({ initialData, paymentMethods, initialMonth, initialYear }: LedgerProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(() => new Date(initialYear, initialMonth, 1));
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
@@ -354,7 +354,7 @@ export function LedgerClient({ initialData, paymentMethods, initialMonth, initia
         </div>
       </div>
 
-      <EntryModal 
+      <EntryForm 
         isOpen={modalOpen} 
         onClose={() => setModalOpen(false)} 
         onSubmit={handleEntrySubmit}

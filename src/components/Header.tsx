@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { logoutAction } from '@/app/actions/auth';
 
-export function DashboardHeader({ username, balance }: { username: string; balance?: number }) {
+export function Header({ username, balance }: { username: string; balance?: number }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const isFullWidthPage = pathname === '/ledger' || pathname === '/profile';

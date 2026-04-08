@@ -1,5 +1,5 @@
 import React from 'react';
-import { LedgerClient } from '@/components/LedgerClient';
+import { Ledger } from '@/components/Ledger';
 import { getEntries } from '@/app/actions/ledger';
 import { getPaymentMethods } from '@/app/actions/payment';
 
@@ -15,7 +15,7 @@ export default async function LedgerPage(props: {
   const paymentMethods = await getPaymentMethods();
 
   return (
-    <LedgerClient 
+    <Ledger 
       initialData={ledgerData} 
       paymentMethods={paymentMethods}
       initialMonth={month}
