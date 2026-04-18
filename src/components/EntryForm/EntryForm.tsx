@@ -52,8 +52,6 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
 
   useEffect(() => {
     if (isOpen) {
-      // Fetch contacts
-      // Fetch fresh contacts and clear any stale selections pointing to deleted contacts
       getIOUContacts().then(freshContacts => {
         setIouContacts(freshContacts);
         const validIds = new Set(freshContacts.map((c: { _id?: string; [key: string]: unknown }) => c._id));
@@ -118,7 +116,6 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
         const newEntries = [...prev];
         const entry = { ...newEntries[index], ...updates };
         
-        // Automatically set iou_type and iou_action based on transaction type if not set
         if (updates.is_iou === true) {
             if (!entry.iou_type) {
                 entry.iou_type = type === 'expense' ? 'receivable' : 'debt';
@@ -142,7 +139,6 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
       setIouContacts([...iouContacts, contact]);
       setNewContactName('');
       setIsAddingContact(false);
-      // If we only have one entry, auto-select this contact
       if (entries.length === 1) {
         handleEntryChange(0, { iou_contact_id: contact._id });
       }
@@ -221,17 +217,23 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[9999] px-4 pt-20 pb-4 sm:p-4">
-      <div className={`bg-white rounded-3xl shadow-2xl ${isEditing ? 'max-w-2xl' : 'max-w-3xl'} w-full max-h-[82vh] sm:max-h-[88vh] flex flex-col overflow-hidden transform transition-all border border-white/20 animate-in zoom-in-95 duration-200`}>
+    <div
+      className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-md flex items-center justify-center z-[9999] px-4 pt-20 pb-4 sm:p-4"
+      style={{ animation: 'fade-in 0.2s ease-out both' }}
+    >
+      <div
+        className={`bg-[#1E293B] border border-[#334155] rounded-3xl shadow-2xl ${isEditing ? 'max-w-2xl' : 'max-w-3xl'} w-full max-h-[82vh] sm:max-h-[88vh] flex flex-col overflow-hidden`}
+        style={{ animation: 'zoom-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both' }}
+      >
         
-        {/* form Header */}
-        <div className="px-4 py-3 sm:px-6 sm:py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+        {/* Form Header */}
+        <div className="px-4 py-3 sm:px-6 sm:py-5 border-b border-[#334155] flex justify-between items-center shrink-0 bg-[#1E293B]">
           <div>
-            <h3 className="text-base sm:text-xl font-bold text-slate-800 flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${type === 'expense' ? 'bg-red-500' : 'bg-green-500'}`}></div>
+            <h3 className="text-base sm:text-lg font-bold text-[#F8FAFC] flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${type === 'expense' ? 'bg-[#F43F5E]' : 'bg-[#22C55E] shadow-[0_0_8px_rgba(34,197,94,0.6)]'}`} style={type === 'expense' ? {boxShadow: '0 0 8px rgba(244,63,94,0.6)'} : {}}></div>
               {isEditing ? 'Edit' : 'Add'} {type === 'expense' ? 'Expense' : 'Money'}
             </h3>
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">
+            <p className="text-[10px] sm:text-xs text-[#94A3B8] font-medium uppercase tracking-wider mt-0.5">
               {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}
             </p>
           </div>
@@ -244,13 +246,13 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
-              <button type="button" className="p-2 sm:p-3 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-xl sm:rounded-2xl transition-all border border-slate-100 shadow-sm flex items-center justify-center relative z-10">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <button type="button" className="p-2 sm:p-3 text-[#94A3B8] hover:bg-[#263347] hover:text-[#F8FAFC] rounded-xl sm:rounded-2xl transition-all border border-[#334155] shadow-sm flex items-center justify-center relative z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
                 </svg>
               </button>
             </div>
-            <button onClick={onClose} className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg sm:rounded-xl transition-all">
+            <button onClick={onClose} className="p-1.5 sm:p-2 text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#F43F5E]/20 rounded-lg sm:rounded-xl transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -258,36 +260,40 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
           </div>
         </div>
         
-        {/* form Body */}
+        {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-6 space-y-3 sm:space-y-6 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-6 space-y-3 sm:space-y-6 scrollbar-hide bg-[#0F172A]">
             {entries.map((entry, index) => (
-              <EntryFormRow
+              <div
                 key={index}
-                index={index}
-                entry={entry}
-                entriesCount={entries.length}
-                isEditing={isEditing}
-                type={type}
-                iouContacts={iouContacts}
-                paymentMethods={paymentMethods}
-                handleRemoveEntry={handleRemoveEntry}
-                handleEntryChange={handleEntryChange}
-                isAddingContact={isAddingContact}
-                setIsAddingContact={setIsAddingContact}
-                newContactName={newContactName}
-                setNewContactName={setNewContactName}
-                handleCreateContact={handleCreateContact}
-              />
+                style={{ animation: 'slide-in-up 0.3s ease-out both', animationDelay: `${index * 60}ms` }}
+              >
+                <EntryFormRow
+                  index={index}
+                  entry={entry}
+                  entriesCount={entries.length}
+                  isEditing={isEditing}
+                  type={type}
+                  iouContacts={iouContacts}
+                  paymentMethods={paymentMethods}
+                  handleRemoveEntry={handleRemoveEntry}
+                  handleEntryChange={handleEntryChange}
+                  isAddingContact={isAddingContact}
+                  setIsAddingContact={setIsAddingContact}
+                  newContactName={newContactName}
+                  setNewContactName={setNewContactName}
+                  handleCreateContact={handleCreateContact}
+                />
+              </div>
             ))}
             
             {!isEditing && (
               <button 
                 type="button" 
                 onClick={handleAddMore}
-                className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-blue-600 hover:text-blue-600 hover:bg-slate-50 transition-all font-bold flex items-center justify-center gap-2 group"
+                className="w-full py-4 border-2 border-dashed border-[#334155] rounded-2xl text-[#94A3B8] hover:bg-[#1E293B] hover:border-[#6366F1] hover:text-[#6366F1] transition-all font-bold flex items-center justify-center gap-2 group"
               >
-                <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <div className="w-6 h-6 rounded-full bg-[#263347] flex items-center justify-center transition-colors group-hover:bg-[#6366F1] group-hover:text-white">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
                   </svg>
@@ -297,20 +303,19 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
             )}
           </div>
           
-          {/* form Footer */}
-          <div className="px-4 py-3 sm:px-6 sm:py-5 bg-slate-50 border-t border-slate-100 shrink-0">
+          {/* Form Footer */}
+          <div className="px-4 py-3 sm:px-6 sm:py-5 bg-[#1E293B] border-t border-[#334155] shrink-0">
             <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center">
               
-              {/* Primary Actions Group */}
               <div className="contents sm:flex sm:order-2 sm:items-center sm:gap-3">
                 <button 
                   type="submit" 
                   disabled={isSubmitting || isDeleting}
-                  className="col-span-2 order-1 sm:order-2 btn-primary !py-3 sm:!py-2.5 !px-8 !rounded-2xl !shadow-xl !text-sm sm:!text-base flex items-center justify-center disabled:opacity-80 disabled:cursor-wait"
+                  className="col-span-2 order-1 sm:order-2 btn-primary !py-3 sm:!py-2.5 !px-8 flex items-center justify-center disabled:opacity-80 disabled:cursor-wait"
                 >
                   {isSubmitting ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -325,7 +330,7 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
                   type="button" 
                   onClick={onClose} 
                   disabled={isSubmitting || isDeleting}
-                  className={`${isEditing ? 'col-span-1' : 'col-span-2'} order-2 sm:order-1 btn-outline !py-3 sm:!py-2.5 !px-6 !rounded-2xl !text-sm sm:!text-base disabled:opacity-80`}
+                  className={`${isEditing ? 'col-span-1' : 'col-span-2'} order-2 sm:order-1 btn-outline !py-3 sm:!py-2.5 !px-6 disabled:opacity-80`}
                 >
                   Cancel
                 </button>
@@ -337,11 +342,11 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
                     type="button" 
                     onClick={handleDelete}
                     disabled={isSubmitting || isDeleting}
-                    className="w-full sm:w-auto btn-danger !py-3 sm:!py-2.5 !px-5 !rounded-2xl !text-sm flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-wait"
+                    className="w-full sm:w-auto btn-danger !py-3 sm:!py-2.5 !px-5 flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-wait"
                   >
                     {isDeleting ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>

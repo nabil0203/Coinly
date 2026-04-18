@@ -45,12 +45,12 @@ export function EntryFormRow({
   handleCreateContact
 }: EntryFormRowProps) {
   return (
-    <div className={`relative p-3 sm:p-5 rounded-2xl bg-slate-50/50 border-2 border-slate-200 group transition-all hover:bg-white hover:border-slate-300 hover:shadow-md ${index > 0 ? 'mt-3' : ''}`}>
+    <div className={`relative p-3 sm:p-5 rounded-2xl bg-[#263347] border-2 border-[#334155] group transition-all hover:bg-[#1E293B] hover:border-[#6366F1]/50 hover:shadow-lg ${index > 0 ? 'mt-3' : ''}`}>
       {!isEditing && entriesCount > 1 && (
         <button 
           type="button" 
           onClick={() => handleRemoveEntry(index)}
-          className="absolute -top-2 -right-2 bg-white text-slate-400 hover:text-red-500 rounded-full p-1.5 shadow-md border border-slate-100 opacity-100 transition-all z-10"
+          className="absolute -top-2 -right-2 bg-[#1E293B] text-[#94A3B8] hover:text-[#F43F5E] hover:bg-[#F43F5E]/10 rounded-full p-1.5 shadow-md border border-[#334155] opacity-100 transition-all z-10"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -60,10 +60,10 @@ export function EntryFormRow({
       
       <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-5">
         <div className="col-span-2 md:col-span-12 lg:col-span-6">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Description</label>
+          <label className="block text-[10px] font-black text-[#94A3B8] uppercase tracking-widest mb-1.5 ml-1">Description</label>
           <input 
             type="text" 
-            className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 placeholder:text-slate-300 font-medium text-sm sm:text-base"
+            className="input-dark px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base"
             value={entry.description} 
             onChange={e => handleEntryChange(index, { description: e.target.value })} 
             required 
@@ -71,13 +71,13 @@ export function EntryFormRow({
           />
         </div>
         <div className="col-span-2 md:col-span-6 lg:col-span-3">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Amount</label>
+          <label className="block text-[10px] font-black text-[#94A3B8] uppercase tracking-widest mb-1.5 ml-1">Amount</label>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">৳</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8] font-bold text-sm">৳</span>
             <input 
               type="number" 
               step="1"
-              className="w-full pl-8 pr-4 py-2 sm:py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-bold tabular-nums text-sm sm:text-base"
+              className="input-dark pl-8 pr-4 py-2 sm:py-3 font-bold tabular-nums text-sm sm:text-base"
               value={entry.amount} 
               onChange={e => handleEntryChange(index, { amount: e.target.value })} 
               required 
@@ -86,9 +86,9 @@ export function EntryFormRow({
           </div>
         </div>
         <div className="col-span-1 md:col-span-6 lg:col-span-3">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1 whitespace-nowrap overflow-hidden text-ellipsis">Method</label>
+          <label className="block text-[10px] font-black text-[#94A3B8] uppercase tracking-widest mb-1.5 ml-1 whitespace-nowrap overflow-hidden text-ellipsis">Method</label>
           <select 
-            className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium text-sm sm:text-base"
+            className="input-dark px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base cursor-pointer"
             value={entry.payment_method} 
             onChange={e => handleEntryChange(index, { payment_method: e.target.value })}
           >
@@ -108,45 +108,43 @@ export function EntryFormRow({
           <label className="flex items-center gap-2 cursor-pointer group">
             <input
               type="checkbox"
-              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all"
+              className="w-4 h-4 rounded border-[#334155] bg-[#0F172A] transition-all accent-[#6366F1]"
               checked={entry.is_iou}
               onChange={e => handleEntryChange(index, { is_iou: e.target.checked })}
             />
-            <span className="text-xs font-bold text-slate-500 group-hover:text-slate-800 transition-colors uppercase tracking-tight">Debt / Loan?</span>
+            <span className="text-xs font-bold text-[#94A3B8] group-hover:text-[#F8FAFC] transition-colors uppercase tracking-tight">Debt / Loan?</span>
           </label>
         </div>
       </div>
 
       {/* IOU Section */}
-      <div className="mt-3 pt-3 border-t border-slate-100">
-          {/* Checkbox row — hidden on mobile (checkbox is in the grid above) */}
-          <div className="hidden md:flex items-center justify-between mb-3">
+      <div className="mt-4 pt-4 border-t border-[#334155]">
+          <div className="hidden md:flex items-center justify-between mb-4">
               <label className="flex items-center gap-2 cursor-pointer group">
                   <input 
                       type="checkbox" 
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all"
+                      className="w-4 h-4 rounded border-[#334155] bg-[#0F172A] transition-all accent-[#6366F1]"
                       checked={entry.is_iou}
                       onChange={e => handleEntryChange(index, { is_iou: e.target.checked })}
                   />
-                  <span className="text-xs font-bold text-slate-500 group-hover:text-slate-800 transition-colors uppercase tracking-tight">Debt / Loan?</span>
+                  <span className="text-xs font-bold text-[#94A3B8] group-hover:text-[#F8FAFC] transition-colors uppercase tracking-tight">Debt / Loan?</span>
               </label>
               {entry.is_iou && (
                   <button 
                       type="button"
                       onClick={() => setIsAddingContact(!isAddingContact)}
-                      className={`${isAddingContact ? 'bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg' : 'text-blue-600'} text-[10px] font-bold hover:opacity-80 transition-all`}
+                      className={`text-[10px] font-bold transition-all px-3 py-1 rounded-lg ${isAddingContact ? 'bg-[#334155] text-[#F8FAFC]' : 'text-[#6366F1] hover:bg-[#6366F1]/10'}`}
                   >
                       {isAddingContact ? 'Cancel' : '+ New Person'}
                   </button>
               )}
           </div>
-          {/* Mobile-only: show + New Person button when IOU is checked */}
           {entry.is_iou && (
-              <div className="flex md:hidden justify-end mb-2">
+              <div className="flex md:hidden justify-end mb-3">
                   <button
                       type="button"
                       onClick={() => setIsAddingContact(!isAddingContact)}
-                      className={`${isAddingContact ? 'bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg' : 'text-blue-600'} text-[10px] font-bold hover:opacity-80 transition-all`}
+                      className={`text-[10px] font-bold transition-all px-3 py-1 rounded-lg ${isAddingContact ? 'bg-[#334155] text-[#F8FAFC]' : 'text-[#6366F1] hover:bg-[#6366F1]/10'}`}
                   >
                       {isAddingContact ? 'Cancel' : '+ New Person'}
                   </button>
@@ -156,11 +154,11 @@ export function EntryFormRow({
           {entry.is_iou && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                   {isAddingContact && (
-                      <div className="flex gap-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                      <div className="flex gap-2 p-3 rounded-xl border border-[#6366F1]/30 bg-[#6366F1]/10">
                           <input 
                               type="text" 
                               placeholder="Person's Name" 
-                              className="flex-1 px-3 py-1.5 text-xs border border-blue-200 rounded-lg outline-none focus:border-blue-500"
+                              className="input-dark flex-1 px-3 py-1.5 text-xs !rounded-lg"
                               value={newContactName}
                               onChange={e => setNewContactName(e.target.value)}
                               onKeyDown={e => e.key === 'Enter' && handleCreateContact(e)}
@@ -177,9 +175,9 @@ export function EntryFormRow({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Whom (Contact)</label>
+                          <label className="block text-[9px] font-black text-[#94A3B8] uppercase tracking-widest mb-1.5 ml-1">Whom (Contact)</label>
                           <select 
-                              className="w-full px-3 py-2 text-xs bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
+                              className="input-dark px-3 py-2 text-xs !rounded-xl cursor-pointer"
                               value={entry.iou_contact_id}
                               onChange={e => handleEntryChange(index, { iou_contact_id: e.target.value })}
                               required={entry.is_iou}
@@ -193,9 +191,9 @@ export function EntryFormRow({
                           </select>
                       </div>
                       <div>
-                          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Action Type</label>
+                          <label className="block text-[9px] font-black text-[#94A3B8] uppercase tracking-widest mb-1.5 ml-1">Action Type</label>
                           <select 
-                              className="w-full px-3 py-2 text-xs bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-slate-700 font-medium"
+                              className="input-dark px-3 py-2 text-xs !rounded-xl cursor-pointer"
                               value={`${entry.iou_type}_${entry.iou_action}`}
                               onChange={e => {
                                   const [iType, iAction] = e.target.value.split('_');
@@ -220,11 +218,11 @@ export function EntryFormRow({
                           </select>
                       </div>
                   </div>
-                  <div className="space-y-1.5 px-1 pb-1">
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Details</label>
+                  <div className="space-y-1.5 px-1 pb-1 pt-1">
+                      <label className="block text-[9px] font-black text-[#94A3B8] uppercase tracking-widest leading-none">Details</label>
                       <input 
                           type="text" 
-                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all text-sm font-bold text-slate-700 placeholder:text-slate-300"
+                          className="input-dark px-4 py-3 text-sm !rounded-xl"
                           value={entry.iou_details}
                           onChange={e => handleEntryChange(index, { iou_details: e.target.value })}
                           placeholder="Specific notes e.g., For office lunch..."

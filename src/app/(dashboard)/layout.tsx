@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   const totalBalance = paymentMethods.reduce((acc: number, method: { balance?: number }) => acc + (Number(method.balance) || 0), 0);
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-50 text-slate-900 overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-[#0F172A] text-[#F8FAFC] overflow-hidden">
       <AutoLogout />
       <Header username={user.username} balance={totalBalance} />
       <main className="flex-1 overflow-hidden">

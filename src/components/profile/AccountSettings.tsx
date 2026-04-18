@@ -1,222 +1,155 @@
+'use client';
+
 import React, { useState } from 'react';
-import { updateProfileAction, changePasswordAction } from '@/app/actions/profile';
-import { ProfileUser } from './ProfileInformation';
 
 interface AccountSettingsProps {
-  user: ProfileUser;
+  user: {
+    username: string;
+    email: string;
+  };
+  changePasswordAction: (formData: FormData) => Promise<{ success?: boolean; error?: string }>;
 }
 
-export function AccountSettings({ user }: AccountSettingsProps) {
-  // State for Profile Editing
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [fullName, setFullName] = useState(user?.full_name || '');
-  const [username, setUsername] = useState(user?.username || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
+export function AccountSettings({ user, changePasswordAction }: AccountSettingsProps) {
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errorPos, setErrorPos] = useState('');
 
-  // State for Password Change
-  const [isEditingPassword, setIsEditingPassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isSavingPassword, setIsSavingPassword] = useState(false);
-
-  const handleProfileSave = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsSavingProfile(true);
-    const result = await updateProfileAction({
-      full_name: fullName,
-      username: username,
-      email: email
-    });
-    if (result.success) {
-      setIsEditingProfile(false);
-    } else {
-      alert(result.error);
-    }
-    setIsSavingProfile(false);
-  };
+    setLoading(true);
+    setSuccess(false);
+    setErrorPos('');
 
-  const handlePasswordSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match");
+      setErrorPos('New passwords do not match');
+      setLoading(false);
       return;
     }
-    setIsSavingPassword(true);
-    const result = await changePasswordAction({ currentPassword, newPassword, confirmPassword });
-    if (result.success) {
-      alert("Password updated successfully");
-      setIsEditingPassword(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } else {
-      alert(result.error);
+
+    const res = await changePasswordAction(formData);
+    
+    if (res?.error) setErrorPos(res.error);
+    else {
+        setSuccess(true);
+        (e.target as HTMLFormElement).reset();
     }
-    setIsSavingPassword(false);
-  };
+    
+    setLoading(false);
+  }
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in slide-in-from-bottom-[20px] duration-500 fade-in">
-      {/* Account Settings Section */}
-      <div className="bg-white rounded-[2rem] shadow-premium border border-fintech-border p-6 md:p-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h3 className="text-xl md:text-2xl font-black text-fintech-text-main font-poppins mb-0">Account Settings</h3>
-          <div className="flex gap-3">
-            {!isEditingProfile ? (
-              <button
-                onClick={() => setIsEditingProfile(true)}
-                className="btn-primary !px-5 !py-2.5 flex items-center gap-2 text-sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                </svg>
-                Edit
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setIsEditingProfile(false)}
-                  className="btn-outline !px-4 !py-2.5 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleProfileSave}
-                  disabled={isSavingProfile}
-                  className="btn-primary !px-5 !py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-wait"
-                >
-                  {isSavingProfile && (
-                    <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  )}
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            )}
-          </div>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6 sm:space-y-10">
+      
+      <div className="bg-[#1E293B] md:bg-transparent border border-[#334155] md:border-transparent rounded-3xl p-6 sm:p-0">
+        <div className="mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-[#F8FAFC]">Security Preferences</h2>
+          <p className="text-sm text-[#94A3B8]">Manage your password and security settings.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-fintech-text-muted uppercase tracking-widest ml-1">Username</label>
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
+          <div className="space-y-2" style={{ animation: 'slide-in-up 0.35s ease-out both', animationDelay: '0ms' }}>
+            <label className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider ml-1">Current Password</label>
             <input
-              type="text"
-              className={`w-full px-5 py-3.5 border rounded-2xl transition-all outline-none font-medium ${isEditingProfile ? 'bg-white border-blue-200 focus:ring-4 focus:ring-blue-100' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed'}`}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={!isEditingProfile}
+              name="currentPassword"
+              type="password"
+              placeholder="••••••••"
+              className="input-dark px-4 py-3 sm:px-5 sm:py-4 bg-[#0F172A]"
+              required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-fintech-text-muted uppercase tracking-widest ml-1">Email Address</label>
-            <input
-              type="email"
-              className={`w-full px-5 py-3.5 border rounded-2xl transition-all outline-none font-medium ${isEditingProfile ? 'bg-white border-blue-200 focus:ring-4 focus:ring-blue-100' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed'}`}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={!isEditingProfile}
-            />
+
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2" style={{ animation: 'slide-in-up 0.35s ease-out both', animationDelay: '70ms' }}>
+                <label className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider ml-1">New Password</label>
+                <input
+                name="newPassword"
+                type="password"
+                placeholder="••••••••"
+                className="input-dark px-4 py-3 sm:px-5 sm:py-4 bg-[#0F172A]"
+                required
+                />
+            </div>
+            <div className="space-y-2" style={{ animation: 'slide-in-up 0.35s ease-out both', animationDelay: '140ms' }}>
+                <label className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider ml-1">Confirm New Password</label>
+                <input
+                name="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                className="input-dark px-4 py-3 sm:px-5 sm:py-4 bg-[#0F172A]"
+                required
+                />
+            </div>
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-xs font-bold text-fintech-text-muted uppercase tracking-widest ml-1">Display Name</label>
-            <input
-              type="text"
-              className={`w-full px-5 py-3.5 border rounded-2xl transition-all outline-none font-medium ${isEditingProfile ? 'bg-white border-blue-200 focus:ring-4 focus:ring-blue-100' : 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed'}`}
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              disabled={!isEditingProfile}
-            />
+
+          {errorPos && (
+             <div className="p-4 rounded-xl bg-[#F43F5E]/10 text-[#F43F5E] border border-[#F43F5E]/20 text-sm font-bold flex items-center gap-2">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+               </svg>
+               {errorPos}
+             </div>
+          )}
+
+          {success && (
+            <div className="p-4 rounded-xl bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20 text-sm font-bold flex items-center gap-2">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+               </svg>
+               Password updated successfully!
+            </div>
+          )}
+
+          <div className="pt-2" style={{ animation: 'slide-in-up 0.35s ease-out both', animationDelay: '210ms' }}>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full sm:w-auto min-w-[170px] !py-3 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Updating...
+                </>
+              ) : (
+                'Update Password'
+              )}
+            </button>
           </div>
-        </div>
+        </form>
       </div>
 
-      {/* Change Password Section */}
-      <div className="bg-white rounded-[2rem] shadow-premium border border-fintech-border p-6 md:p-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h3 className="text-xl md:text-2xl font-black text-fintech-text-main font-poppins mb-0">Change Password</h3>
-          <div className="flex gap-3">
-            {!isEditingPassword ? (
-              <button
-                onClick={() => setIsEditingPassword(true)}
-                className="btn-primary !px-5 !py-2.5 flex items-center gap-2 text-sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
-                Change Password
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setIsEditingPassword(false);
-                    setCurrentPassword('');
-                    setNewPassword('');
-                    setConfirmPassword('');
-                  }}
-                  className="btn-outline !px-4 !py-2.5 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePasswordSave}
-                  disabled={isSavingPassword || !currentPassword || !newPassword || !confirmPassword}
-                  className="btn-primary !px-5 !py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-wait"
-                >
-                  {isSavingPassword && (
-                    <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  )}
-                  {isSavingPassword ? 'Saving...' : 'Update Password'}
-                </button>
-              </div>
-            )}
-          </div>
+      <div className="bg-[#1E293B] md:bg-transparent border border-[#334155] md:border-transparent rounded-3xl p-6 sm:p-0 pt-0 sm:pt-6 border-t md:border-[#334155]">
+        <div className="mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-[#F8FAFC]">Connected Accounts</h2>
+          <p className="text-sm text-[#94A3B8]">Manage your linked email and identity providers.</p>
         </div>
 
-        {isEditingPassword && (
-          <form onSubmit={handlePasswordSave} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 animate-in slide-in-from-top-2">
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-bold text-fintech-text-muted uppercase tracking-widest ml-1">Current Password</label>
-              <input
-                type="password"
-                required
-                className="w-full px-5 py-3.5 border rounded-2xl transition-all outline-none font-medium bg-white border-blue-200 focus:ring-4 focus:ring-blue-100"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
+        <div className="max-w-md space-y-4">
+            <div className="flex items-center justify-between p-4 bg-[#263347] border border-[#334155] rounded-2xl transition-all duration-200 hover:border-[#6366F1]/30 hover:shadow-[0_4px_16px_rgba(99,102,241,0.1)] ring-1 ring-transparent hover:ring-[#6366F1]/15 interactive-card">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#1E293B] border border-[#334155] flex items-center justify-center shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#94A3B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#F8FAFC] truncate">{user.email}</p>
+                        <p className="text-[10px] text-[#94A3B8] uppercase tracking-wider font-bold">Primary Email</p>
+                    </div>
+                </div>
+                <div className="px-3 py-1 rounded-full bg-[#22C55E]/10 text-[#22C55E] text-xs font-bold shrink-0">
+                    Verified
+                </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-fintech-text-muted uppercase tracking-widest ml-1">New Password</label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                className="w-full px-5 py-3.5 border rounded-2xl transition-all outline-none font-medium bg-white border-blue-200 focus:ring-4 focus:ring-blue-100"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-fintech-text-muted uppercase tracking-widest ml-1">Confirm New Password</label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                className="w-full px-5 py-3.5 border rounded-2xl transition-all outline-none font-medium bg-white border-blue-200 focus:ring-4 focus:ring-blue-100"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="hidden" />
-          </form>
-        )}
+        </div>
       </div>
     </div>
   );

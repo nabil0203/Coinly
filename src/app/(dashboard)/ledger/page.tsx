@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ledger } from '@/components/Ledger';
+import { Ledger } from '@/components/Ledger/Ledger';
 import { getEntries } from '@/app/actions/ledger';
 import { getPaymentMethods } from '@/app/actions/payment';
 

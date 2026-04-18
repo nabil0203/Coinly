@@ -16,10 +16,10 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
       className={`h-full overflow-auto ledger-scroll ${isScrolled ? 'scroll-shadow-left' : ''}`}
       onScroll={handleScroll}
     >
-      <table className="w-full min-w-max border-collapse border-b border-slate-800 text-xs md:text-[13px] bg-white">
+      <table className="w-full min-w-max border-collapse border-b border-slate-800 text-xs md:text-[13px] bg-white text-slate-800">
         <thead className="sticky top-0 z-40 bg-white shadow-sm ring-1 ring-slate-800">
           <tr className="divide-x divide-slate-400 border-b border-slate-800 text-sm md:text-[15px]">
-            <th className="sticky left-0 z-50 bg-white border-r border-slate-800 px-1 py-3 md:px-1 md:py-4 text-center font-bold">Date</th>
+            <th className="sticky left-0 z-50 bg-white border-r border-slate-800 px-1 py-3 md:px-1 md:py-4 text-center font-bold text-slate-800">Date</th>
             <th className="bg-[#4CE0D2] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400">Expense Details</th>
             {allMethods.map(m => (
               <th key={`ex-h-${m}`} className="bg-[#4CE0D2] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400 whitespace-nowrap">{m}</th>
@@ -29,7 +29,7 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
             {allMethods.map(m => (
               <th key={`in-h-${m}`} className="bg-[#F4D160] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-400 whitespace-nowrap">{m}</th>
             ))}
-            <th className="bg-[#7895CB] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-800 text-white !text-black">Total Balance</th>
+            <th className="bg-[#7895CB] px-1 py-3 md:px-1 md:py-4 text-center font-bold text-black border-r border-slate-800">Total Balance</th>
           </tr>
         </thead>
         <tbody>
@@ -38,7 +38,7 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
               {r.isFirst ? (
                 <td rowSpan={r.rowCount} className="sticky left-0 z-30 bg-white border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center align-middle font-bold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-slate-800">
                   <div className="flex flex-col items-center justify-center leading-tight">
-                    <span className="text-sm md:text-base font-black">{String(r.day).padStart(2, '0')}</span>
+                    <span className="text-sm md:text-base font-black text-slate-800">{String(r.day).padStart(2, '0')}</span>
                     <span className="text-xs md:text-sm font-semibold text-slate-500 tracking-tight">{monthName}</span>
                   </div>
                 </td>
@@ -49,7 +49,7 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
               {r.isExpStart ? (
                 <td
                   rowSpan={r.expSpan}
-                  className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#A3EBE4] transition-colors truncate max-w-[110px] md:max-w-[160px] align-middle"
+                  className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#A3EBE4] transition-colors truncate max-w-[110px] md:max-w-[160px] align-middle text-slate-800"
                   onClick={() => openModal('expense', r.dateStr, r.exp)}
                   title={r.exp?.description}
                 >
@@ -64,7 +64,7 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
                   <td 
                     key={`ex-${r.index}-${m}`} 
                     rowSpan={r.expSpan}
-                    className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#A3EBE4] transition-colors align-middle"
+                    className="bg-[#E6FAF8] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#A3EBE4] transition-colors align-middle text-slate-800"
                     onClick={() => !r.exp && openModal('expense', r.dateStr)}
                   >
                     {r.exp?.payment_method === m ? r.exp.amount.toLocaleString() : ''}
@@ -85,7 +85,7 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
               {r.isIncStart ? (
                 <td
                   rowSpan={r.incSpan}
-                  className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#F9EAB3] transition-colors truncate max-w-[110px] md:max-w-[160px] align-middle"
+                  className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 cursor-pointer hover:bg-[#F9EAB3] transition-colors truncate max-w-[110px] md:max-w-[160px] align-middle text-slate-800"
                   onClick={() => openModal('cashin', r.dateStr, r.inc)}
                   title={r.inc?.description}
                 >
@@ -100,7 +100,7 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
                   <td 
                     key={`in-${r.index}-${m}`} 
                     rowSpan={r.incSpan}
-                    className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#F9EAB3] transition-colors align-middle"
+                    className="bg-[#FDF9E6] px-1 py-0.5 md:px-1 md:py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#F9EAB3] transition-colors align-middle text-slate-800"
                     onClick={() => !r.inc && openModal('cashin', r.dateStr)}
                   >
                     {r.inc?.payment_method === m ? r.inc.amount.toLocaleString() : ''}
@@ -110,7 +110,7 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
                 )
               ))}
               {r.isFirst ? (
-                <td rowSpan={r.rowCount} className={`bg-[#E8EDF5] border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle ${(r.dayEndBalance || 0) < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                <td rowSpan={r.rowCount} className={`bg-[#E8EDF5] border-r border-slate-800 px-1 py-0.5 md:px-1 md:py-0.5 text-center font-bold tabular-nums align-middle ${(r.dayEndBalance || 0) < 0 ? 'text-red-700' : 'text-slate-800'}`}>
                   {(r.dayEndBalance || 0).toLocaleString()}
                 </td>
               ) : (

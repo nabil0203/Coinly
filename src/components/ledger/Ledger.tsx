@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { EntryForm } from './EntryForm';
+import { EntryForm } from '../EntryForm/EntryForm';
 import { addEntry, updateEntry, deleteEntry, type EntryPayload } from '@/app/actions/ledger';
-import { LedgerEntry, LedgerRow } from './ledger/types';
-import { LedgerTable } from './ledger/LedgerTable';
-import { LedgerCards } from './ledger/LedgerCards';
+import { LedgerEntry, LedgerRow } from './types';
+import { LedgerTable } from './LedgerTable';
+import { LedgerCards } from './LedgerCards';
 
 interface LedgerProps {
   initialData: {
@@ -21,7 +21,7 @@ interface LedgerProps {
 
 const getDaysInMonth = (year: number, month: number) => {
   return new Date(year, month + 1, 0).getDate();
-};
+}
 
 function calculateSpans(entryCount: number, totalRows: number): number[] {
   if (entryCount === 0) return [totalRows];
@@ -44,7 +44,6 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
   const [targetDate, setTargetDate] = useState('');
   const [editEntry, setEditEntry] = useState<LedgerEntry | null>(null);
 
-  // Sync currentDate if initialMonth/initialYear props change
   const [prevProps, setPrevProps] = useState({ initialMonth, initialYear });
   if (prevProps.initialMonth !== initialMonth || prevProps.initialYear !== initialYear) {
     setPrevProps({ initialMonth, initialYear });
@@ -77,7 +76,6 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
 
   const monthName = currentDate.toLocaleString('default', { month: 'long' });
 
-  // Determine all unique payment methods
   const activeMethods = paymentMethods ? paymentMethods.map(pm => pm.name) : [];
   const historicalMethods = new Set<string>();
 
@@ -100,10 +98,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
   const rows: LedgerRow[] = [];
   let runningBalance = Number(initialData.prevBalance);
 
-  const totals = {
-    exAll: 0,
-    inAll: 0
-  };
+  const totals = { exAll: 0, inAll: 0 };
 
   for (let day = 1; day <= daysInMonth; day++) {
     const padMonth = String(month + 1).padStart(2, '0');
@@ -122,7 +117,6 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
     let expRowCounter = 0;
     let incIdx = 0;
     let incRowCounter = 0;
-
     let dailyExpenseTotal = 0;
 
     for (let i = 0; i < rowCount; i++) {
@@ -133,7 +127,6 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
           index: rows.length
         };
 
-        // Expense side logic
         if (expRowCounter === 0) {
             rowProps.exp = expenses[expIdx] || null;
             rowProps.expSpan = expSpans[expIdx];
@@ -141,13 +134,12 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
             expRowCounter = expSpans[expIdx];
             expIdx++;
         } else {
-            rowProps.exp = null; // Don't carry over for balance calc if not start
+            rowProps.exp = null;
             rowProps.isExpStart = false;
             rowProps.expSpan = undefined;
         }
         expRowCounter--;
 
-        // Income side logic
         if (incRowCounter === 0) {
             rowProps.inc = cashins[incIdx] || null;
             rowProps.incSpan = incSpans[incIdx];
@@ -155,7 +147,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
             incRowCounter = incSpans[incIdx];
             incIdx++;
         } else {
-            rowProps.inc = null; // Don't carry over for balance calc if not start
+            rowProps.inc = null;
             rowProps.isIncStart = false;
             rowProps.incSpan = undefined;
         }
@@ -176,12 +168,8 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
           runningBalance += amt;
         }
   
-        rows.push({
-          ...rowProps,
-          currentBalance: runningBalance
-        } as LedgerRow);
+        rows.push({ ...rowProps, currentBalance: runningBalance } as LedgerRow);
     }
-
 
     if (rows.length > 0) {
       const targetRow = rows[rows.length - rowCount];
@@ -191,7 +179,6 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
       }
     }
   }
-
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setIsScrolled((e.target as HTMLDivElement).scrollLeft > 10);
@@ -232,31 +219,34 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-100/50 overflow-hidden">
+    <div className="h-full flex flex-col bg-[#0F172A] overflow-hidden">
       {/* Sub-header / Quick Actions */}
-      <div className="px-4 md:px-10 py-2 bg-white border-b border-fintech-border flex flex-wrap items-center justify-between gap-3">
+      <div
+        className="px-4 md:px-10 py-2 bg-[#1E293B] border-b border-[#334155] flex flex-wrap items-center justify-between gap-3"
+        style={{ animation: 'slide-in-top 0.3s ease-out both' }}
+      >
         <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar">
-          <h2 className="text-sm md:text-base font-bold text-fintech-text-main flex items-center gap-2 whitespace-nowrap">
-            <span className="w-2 h-6 bg-fintech-primary rounded-full"></span>
+          <h2 className="text-sm md:text-base font-bold text-[#F8FAFC] flex items-center gap-2 whitespace-nowrap">
+            <span className="w-2 h-6 bg-[#6366F1] rounded-full"></span>
             <span>Monthly Ledger</span>
           </h2>
 
-          <div className="flex items-center bg-gray-100/80 rounded-full px-1.5 py-0.5 border border-gray-200 shadow-sm">
+          <div className="flex items-center bg-[#263347] rounded-full px-1.5 py-0.5 border border-[#334155] shadow-sm">
             <button
               onClick={handlePrevMonth}
-              className="p-1 hover:bg-white rounded-full transition-colors text-fintech-text-muted hover:text-fintech-primary"
+              className="p-1 hover:bg-[#334155] hover:text-[#F8FAFC] rounded-full transition-all text-[#94A3B8] active:scale-90"
               title="Previous Month"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </button>
-            <div className="px-2 md:px-4 font-bold text-xs md:text-sm min-w-[100px] md:min-w-[140px] text-center text-fintech-primary whitespace-nowrap">
+            <div className="px-2 md:px-4 font-bold text-xs md:text-sm min-w-[100px] md:min-w-[140px] text-center text-[#6366F1] whitespace-nowrap">
               {monthName} {year}
             </div>
             <button
               onClick={handleNextMonth}
-              className="p-1 hover:bg-white rounded-full transition-colors text-fintech-text-muted hover:text-fintech-primary"
+              className="p-1 hover:bg-[#334155] hover:text-[#F8FAFC] rounded-full transition-all text-[#94A3B8] active:scale-90"
               title="Next Month"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -267,10 +257,10 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
         </div>
 
         <div className="flex gap-2 items-center">
-          <div className="flex bg-gray-100 p-1 rounded-xl">
+          <div className="flex bg-[#0F172A] p-1 rounded-xl border border-[#334155]">
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-fintech-primary' : 'text-fintech-text-muted'}`}
+              className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-[#334155] shadow-sm text-[#F8FAFC]' : 'text-[#94A3B8] hover:text-[#F8FAFC]'}`}
               title="Table View"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -279,7 +269,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
             </button>
             <button
               onClick={() => setViewMode('card')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'card' ? 'bg-white shadow-sm text-fintech-primary' : 'text-fintech-text-muted'}`}
+              className={`p-1.5 rounded-lg transition-all ${viewMode === 'card' ? 'bg-[#334155] shadow-sm text-[#F8FAFC]' : 'text-[#94A3B8] hover:text-[#F8FAFC]'}`}
               title="Card View"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -290,7 +280,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
 
           <button
             onClick={handleCurrentMonth}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-fintech-primary rounded-lg font-bold hover:bg-gray-200 transition-all text-xs border border-gray-200 shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#263347] text-[#6366F1] rounded-lg font-bold hover:bg-[#334155] hover:text-[#818CF8] transition-all text-xs border border-[#334155] shadow-sm active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
@@ -320,35 +310,32 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
         )}
       </div>
 
-      <div className="bg-white border-t border-fintech-border py-2 px-3 md:px-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-30 flex items-center justify-between gap-2 md:gap-4 overflow-hidden">
-        {/* Left: Monthly Summary */}
-        <div className="flex gap-3 md:gap-8 border-r border-gray-200 pr-3 md:pr-8 h-full items-center shrink-0">
+      <div className="bg-[#1E293B] border-t border-[#334155] py-2 px-3 md:px-10 shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.3)] z-30 flex items-center justify-between gap-2 md:gap-4 overflow-hidden">
+        <div className="flex gap-3 md:gap-8 border-r border-[#334155] pr-3 md:pr-8 h-full items-center shrink-0">
           <div className="flex flex-col">
-            <span className="text-[9px] md:text-[10px] uppercase font-bold text-fintech-text-muted leading-tight">{monthName} Expense</span>
-            <span className="text-xs md:text-lg font-black text-fintech-expense-text">৳{totals.exAll.toLocaleString()}</span>
+            <span className="text-[9px] md:text-[10px] uppercase font-bold text-[#94A3B8] leading-tight">{monthName} Expense</span>
+            <span className="text-xs md:text-lg font-black text-[#F43F5E]">৳{totals.exAll.toLocaleString()}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[9px] md:text-[10px] uppercase font-bold text-fintech-text-muted leading-tight">{monthName} Cash In</span>
-            <span className="text-xs md:text-lg font-black text-fintech-income-text">৳{totals.inAll.toLocaleString()}</span>
+            <span className="text-[9px] md:text-[10px] uppercase font-bold text-[#94A3B8] leading-tight">{monthName} Cash In</span>
+            <span className="text-xs md:text-lg font-black text-[#22C55E]">৳{totals.inAll.toLocaleString()}</span>
           </div>
         </div>
 
-        {/* Middle: Payment Methods - horizontal scroll on mobile to keep height constant */}
-        <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar border-r border-gray-200 px-2 md:px-8">
+        <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar border-r border-[#334155] px-2 md:px-8">
           <div className="flex items-center gap-4 md:gap-8 justify-start md:justify-center">
             {paymentMethods.map(pm => (
               <div key={`footer-pm-${pm._id || pm.id}`} className="flex flex-col items-start md:items-end shrink-0">
-                <span className="text-[8px] md:text-xs uppercase font-bold text-fintech-text-muted leading-none mb-0.5">{pm.name}</span>
-                <span className="text-[11px] md:text-lg font-bold text-fintech-text-main whitespace-nowrap leading-none">৳{(Number(pm.balance) || 0).toLocaleString()}</span>
+                <span className="text-[8px] md:text-xs uppercase font-bold text-[#94A3B8] leading-none mb-0.5">{pm.name}</span>
+                <span className="text-[11px] md:text-lg font-bold text-[#F8FAFC] whitespace-nowrap leading-none">৳{(Number(pm.balance) || 0).toLocaleString()}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Right: Total Balance */}
         <div className="flex flex-col items-end pl-1 md:pl-0 shrink-0">
-          <span className="text-[10px] md:text-xs uppercase font-bold text-fintech-primary leading-tight">Total</span>
-          <span className="text-sm md:text-3xl font-black text-fintech-text-main tracking-tight leading-tight whitespace-nowrap">
+          <span className="text-[10px] md:text-xs uppercase font-bold text-[#6366F1] leading-tight">Total</span>
+          <span className="text-sm md:text-3xl font-black text-[#F8FAFC] tracking-tight leading-tight whitespace-nowrap">
             ৳{paymentMethods.reduce((acc, pm) => acc + (Number(pm.balance) || 0), 0).toLocaleString()}
           </span>
         </div>

@@ -1,79 +1,157 @@
 @import "tailwindcss";
 
 @theme {
-  /* Colors from original config - Using kebab-case for better Tailwind compatibility */
-  --color-fintech-bg: #F8FAFC;
-  --color-fintech-surface: #FFFFFF;
-  --color-fintech-primary: #4F46E5;
-  --color-fintech-primary-hover: #4338CA;
-  --color-fintech-text-main: #1F2937;
-  --color-fintech-text-muted: #6B7280;
-  --color-fintech-border: #E2E8F0;
-  --color-fintech-expense-text: #EF4444;
-  --color-fintech-income-text: #22C55E;
-  --color-fintech-accent: #4F46E5;
+  /* ── Dark Fintech Palette ── */
+  --color-bg:              #0F172A;
+  --color-surface:         #1E293B;
+  --color-surface-2:       #263347;
+  --color-border:          #334155;
+  --color-primary:         #6366F1;
+  --color-primary-hover:   #4F46E5;
+  --color-income:          #22C55E;
+  --color-expense:         #F43F5E;
+  --color-text-main:       #F8FAFC;
+  --color-text-muted:      #94A3B8;
+
+  /* Legacy aliases — kept so any remaining fintech-* references compile */
+  --color-fintech-bg:            #0F172A;
+  --color-fintech-surface:       #1E293B;
+  --color-fintech-primary:       #6366F1;
+  --color-fintech-primary-hover: #4F46E5;
+  --color-fintech-text-main:     #F8FAFC;
+  --color-fintech-text-muted:    #94A3B8;
+  --color-fintech-border:        #334155;
+  --color-fintech-expense-text:  #F43F5E;
+  --color-fintech-income-text:   #22C55E;
+  --color-fintech-accent:        #6366F1;
 
   /* Fonts */
-  --font-inter: var(--font-inter);
+  --font-inter:   var(--font-inter);
   --font-poppins: var(--font-poppins);
-  --font-sans: var(--font-inter), "Inter", "sans-serif";
-  --font-poppins: var(--font-poppins), "Poppins", "sans-serif";
+  --font-sans:    var(--font-inter), "Inter", "sans-serif";
 
-  /* Shadow */
-  --shadow-fintech-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-fintech-card-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  --shadow-premium: 0 10px 30px -5px rgba(79, 70, 229, 0.1), 0 8px 10px -6px rgba(79, 70, 229, 0.05);
+  /* Shadows */
+  --shadow-fintech-card:       0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -2px rgba(0,0,0,0.3);
+  --shadow-fintech-card-hover: 0 20px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px rgba(0,0,0,0.3);
+  --shadow-premium:            0 10px 30px -5px rgba(99,102,241,0.15), 0 8px 10px -6px rgba(99,102,241,0.1);
 
   /* Animations */
-  @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
-  @keyframes zoom-in { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-  @keyframes slide-in-top { 0% { transform: translateY(-10px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  @keyframes fade-in       { 0% { opacity: 0; }                                        100% { opacity: 1; } }
+  @keyframes zoom-in       { 0% { transform: scale(0.95); opacity: 0; }                100% { transform: scale(1); opacity: 1; } }
+  @keyframes slide-in-top  { 0% { transform: translateY(-10px); opacity: 0; }          100% { transform: translateY(0); opacity: 1; } }
+  @keyframes slide-in-up   { 0% { transform: translateY(16px); opacity: 0; }           100% { transform: translateY(0); opacity: 1; } }
+  @keyframes slide-in-left { 0% { transform: translateX(-12px); opacity: 0; }          100% { transform: translateX(0); opacity: 1; } }
+  @keyframes slide-out-up  { 0% { transform: translateY(0); opacity: 1; }              100% { transform: translateY(-12px); opacity: 0; } }
+  @keyframes shake         { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  @keyframes glow-pulse    { 0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }      50% { box-shadow: 0 0 20px 4px rgba(99,102,241,0.2); } }
+  @keyframes shimmer       { 0% { background-position: -400px 0; }                     100% { background-position: 400px 0; } }
+  @keyframes count-ping    { 0% { transform: scale(1); }  50% { transform: scale(1.04); } 100% { transform: scale(1); } }
 
-  --animate-fade-in: fade-in 0.3s ease-out;
-  --animate-zoom-in: zoom-in 0.2s ease-out;
+  --animate-fade-in:      fade-in      0.3s ease-out;
+  --animate-zoom-in:      zoom-in      0.2s ease-out;
   --animate-slide-in-top: slide-in-top 0.3s ease-out;
-  --animate-shake-in: shake 0.3s ease-in-out;
+  --animate-slide-in-up:  slide-in-up  0.35s ease-out;
+  --animate-slide-in-left:slide-in-left 0.3s ease-out;
+  --animate-shake-in:     shake        0.3s ease-in-out;
+  --animate-shimmer:      shimmer      1.5s linear infinite;
 }
 
+/* ── Base ── */
 @layer base {
   body {
-    @apply bg-fintech-bg text-fintech-text-main font-sans antialiased h-[100dvh] overflow-hidden;
+    @apply bg-[#0F172A] text-[#F8FAFC] font-sans antialiased h-[100dvh] overflow-hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-poppins;
+    font-family: var(--font-poppins), "Poppins", sans-serif;
+  }
+
+  /* Native select / input dark override */
+  select option {
+    background-color: #1E293B;
+    color: #F8FAFC;
   }
 }
 
+/* ── Components ── */
 @layer components {
-  /* Components from index.css */
+
+  /* Card */
   .card {
-    @apply bg-white rounded-2xl p-6 border border-fintech-border shadow-fintech-card transition-all duration-300;
+    @apply bg-[#1E293B] rounded-2xl p-6 border border-[#334155] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.4)] transition-all duration-300 will-change-transform;
+    transform: translateZ(0); /* GPU layer */
     &:hover {
-      @apply shadow-fintech-card-hover -translate-y-1;
+      @apply shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5)] -translate-y-1;
     }
   }
 
-  .btn-primary {
-    @apply px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 hover:shadow-lg transition-all active:scale-[0.98] outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20;
-  }
-  .btn-secondary {
-    @apply px-6 py-2.5 bg-slate-50 text-slate-600 border border-slate-200 rounded-xl font-bold hover:bg-slate-100 transition-all active:scale-[0.98] outline-none focus-visible:ring-4 focus-visible:ring-slate-200;
-  }
-  .btn-outline {
-    @apply px-6 py-2.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-xl font-bold hover:bg-slate-200 hover:text-slate-700 transition-all active:scale-[0.98] outline-none;
-  }
-  .btn-success {
-    /* Success is now Blue per user requirement for Save/Add/Update */
-    @apply px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 hover:shadow-lg transition-all active:scale-[0.98] outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20;
-  }
-  .btn-danger {
-    @apply px-6 py-2.5 bg-red-600 text-white rounded-xl font-bold shadow-md shadow-red-600/20 hover:bg-red-700 transition-all active:scale-[0.98] outline-none;
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #1E293B 25%,
+      #263347 50%,
+      #1E293B 75%
+    );
+    background-size: 800px 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+    border-radius: 0.75rem;
   }
 
+  /* GPU-composited interactive cards */
+  .interactive-card {
+    will-change: transform;
+    transform: translateZ(0);
+    @apply transition-all duration-300;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    background-color: #6366F1;
+    color: white;
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+    transition: all 0.2s;
+    outline: none;
+    &:hover  { background-color: #4F46E5; box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+    &:active { transform: scale(0.98); }
+    &:focus-visible { box-shadow: 0 0 0 4px rgba(99,102,241,0.3); }
+  }
+
+  .btn-secondary {
+    @apply px-6 py-2.5 bg-[#263347] text-[#94A3B8] border border-[#334155] rounded-xl font-bold
+           hover:bg-[#334155] hover:text-[#F8FAFC] transition-all active:scale-[0.98] outline-none
+           focus-visible:ring-4 focus-visible:ring-[#334155];
+  }
+
+  .btn-outline {
+    @apply px-6 py-2.5 bg-[#1E293B] text-[#94A3B8] border border-[#334155] rounded-xl font-bold
+           hover:bg-[#263347] hover:text-[#F8FAFC] transition-all active:scale-[0.98] outline-none;
+  }
+
+  .btn-success {
+    background-color: #6366F1;
+    color: white;
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+    transition: all 0.2s;
+    outline: none;
+    &:hover  { background-color: #4F46E5; }
+    &:active { transform: scale(0.98); }
+  }
+
+  .btn-danger {
+    @apply px-6 py-2.5 bg-[#F43F5E] text-white rounded-xl font-bold
+           shadow-md shadow-[#F43F5E]/20 hover:bg-rose-600 transition-all active:scale-[0.98] outline-none;
+  }
+
+  /* Ledger Table */
   .ledger-table-container {
-    @apply overflow-x-auto rounded-xl border border-fintech-border bg-white shadow-sm;
+    @apply overflow-x-auto rounded-xl border border-[#334155] bg-[#1E293B] shadow-sm;
   }
 
   .ledger-table {
@@ -81,104 +159,105 @@
   }
 
   .ledger-header {
-    @apply sticky top-0 bg-gray-50 font-semibold z-10 text-left px-4 py-3 border-b border-r border-fintech-border text-xs uppercase tracking-wider text-fintech-text-muted;
+    @apply sticky top-0 bg-[#263347] font-semibold z-10 text-left px-4 py-3
+           border-b border-r border-[#334155] text-xs uppercase tracking-wider text-[#94A3B8];
   }
 
   .ledger-cell {
-    @apply px-4 py-3 border-b border-r border-[#E5E7EB] text-sm transition-colors duration-150;
+    @apply px-4 py-3 border-b border-r border-[#334155] text-sm transition-colors duration-150 text-[#F8FAFC];
   }
 
   .ledger-row {
     @apply transition-colors duration-200;
   }
 
-  /* Grouping by Date */
-  .group-even {
-    background-color: #F8FAFC;
-  }
+  /* Date-group alternating */
+  .group-even { background-color: #1E293B; }
+  .group-odd  { background-color: #263347; }
 
-  .group-odd {
-    background-color: #EEF2F7;
-  }
+  .ledger-cell:last-child,
+  .ledger-header:last-child { @apply border-r-0; }
 
-  .ledger-cell:last-child, .ledger-header:last-child {
-    @apply border-r-0;
-  }
-
-  /* Sticky Columns */
+  /* Sticky columns */
   .sticky-left {
-    @apply sticky left-0 z-30 bg-white;
-    box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+    @apply sticky left-0 z-30 bg-[#1E293B];
+    box-shadow: 2px 0 5px -2px rgba(0,0,0,0.5);
   }
 
   .sticky-header-top {
-    @apply sticky top-0 z-40 bg-gray-50;
+    @apply sticky top-0 z-40 bg-[#263347];
   }
 
-  /* Scroll Indicators */
+  /* Scroll container */
   .scroll-container {
     @apply overflow-auto relative;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
 
-  .scroll-shadow-left {
-    box-shadow: inset 10px 0 10px -10px rgba(0,0,0,0.15);
-  }
+  .scroll-shadow-left  { box-shadow: inset 10px 0 10px -10px rgba(0,0,0,0.4); }
+  .scroll-shadow-right { box-shadow: inset -10px 0 10px -10px rgba(0,0,0,0.4); }
 
-  .scroll-shadow-right {
-    box-shadow: inset -10px 0 10px -10px rgba(0,0,0,0.15);
-  }
-
-  /* Column Widths */
-  .col-day { width: 60px; min-width: 60px; }
+  /* Column widths */
+  .col-day     { width: 60px;  min-width: 60px;  }
   .col-details { width: 200px; min-width: 200px; }
-  .col-amount { width: 100px; min-width: 100px; }
-  .col-total { width: 120px; min-width: 120px; }
+  .col-amount  { width: 100px; min-width: 100px; }
+  .col-total   { width: 120px; min-width: 120px; }
 
-  /* Mobile Card View Styles */
+  /* Mobile card view */
   .ledger-card {
-    @apply bg-white rounded-xl p-4 mb-3 border border-fintech-border shadow-sm;
+    @apply bg-[#1E293B] rounded-xl p-4 mb-3 border border-[#334155] shadow-sm;
   }
-  
+
   .card-row {
-    @apply flex justify-between py-2 border-b border-gray-100 last:border-0;
+    @apply flex justify-between py-2 border-b border-[#334155] last:border-0;
   }
 
   .card-label {
-    @apply text-xs font-bold text-fintech-text-muted uppercase;
+    @apply text-xs font-bold text-[#94A3B8] uppercase;
   }
 
   .card-value {
-    @apply text-sm font-semibold;
+    @apply text-sm font-semibold text-[#F8FAFC];
   }
 
-  /* Section Tints */
-  .bg-expense-section { background-color: #FEF2F2; }
-  .bg-income-section { background-color: #F0FDF4; }
-  
-  .bg-expense-row-tint { background-color: rgba(254, 242, 242, 0.4); }
-  .bg-income-row-tint { background-color: rgba(240, 253, 244, 0.4); }
+  /* Section tints (dark) */
+  .bg-expense-section { background-color: rgba(244,63,94,0.06); }
+  .bg-income-section  { background-color: rgba(34,197,94,0.06);  }
 
-  .divider-strong {
-    border-right: 3px solid #D1D5DB !important;
+  .bg-expense-row-tint { background-color: rgba(244,63,94,0.04);  }
+  .bg-income-row-tint  { background-color: rgba(34,197,94,0.04); }
+
+  .divider-strong { border-right: 3px solid #334155 !important; }
+
+  /* Form input — shared dark style */
+  .input-dark {
+    @apply w-full bg-[#0F172A] border-2 border-[#334155] rounded-xl text-[#F8FAFC]
+           placeholder:text-[#475569] outline-none transition-all font-medium;
+    &:focus {
+      border-color: #6366F1;
+      box-shadow: 0 0 0 4px rgba(99,102,241,0.15);
+    }
   }
 }
 
-/* Custom Scrollbar */
+/* ── Scrollbar (dark) ── */
 @media (min-width: 1024px) {
-  .ledger-scroll::-webkit-scrollbar {
-    height: 8px;
-    width: 6px;
-  }
-  .ledger-scroll::-webkit-scrollbar-track {
-    background: #f1f5f9;
-  }
+  .ledger-scroll::-webkit-scrollbar       { height: 8px; width: 6px; }
+  .ledger-scroll::-webkit-scrollbar-track { background: #0F172A; }
   .ledger-scroll::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #334155;
     border-radius: 4px;
   }
-  .ledger-scroll::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-  }
+  .ledger-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
 }
+
+/* Global scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #0F172A;
+}
+*::-webkit-scrollbar       { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: #0F172A; }
+*::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: #475569; }

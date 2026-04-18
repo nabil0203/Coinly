@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home } from '@/components/Home';
+import { Home } from '@/components/Homepage/Home';
 import { getPaymentMethods } from '@/app/actions/payment';
 import { getCurrentUser } from '@/lib/auth';
 import dbConnect from '@/lib/db';
