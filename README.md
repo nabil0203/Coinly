@@ -133,6 +133,21 @@ http://localhost:3000/
 
 ---
 
+## 🏗️ Infrastructure & Upgrade Path
+
+Current stack runs on free tiers. Recommended upgrade path for stable lifetime use:
+
+| Service | Current | Recommended | Cost |
+|---------|---------|-------------|------|
+| MongoDB Atlas | M0 (Free, 512MB, shared) | M2 (Shared, dedicated RAM) | ~$9/mo |
+| Vercel | Hobby (10s timeout, cold starts) | Pro (warmed functions, 60s timeout) | ~$20/mo |
+| Upstash Redis | Free tier | Free tier (sufficient for personal use) | Free |
+
+**Why Atlas M2?** The M0 free cluster uses a shared connection pool and has no dedicated RAM. As your data grows, query performance degrades. M2 gives a dedicated RAM allocation and a much better connection pool — for ~$9/mo it's the single most impactful infrastructure upgrade.
+
+**Cold start note:** Vercel serverless functions spin down after inactivity. Your first load of the day is slow because of this + a new MongoDB connection being established. Vercel Pro's "always-warm" feature eliminates this.
+
+
 ## 🤝 Contributing
 - Contributions, issues, and feature requests are welcome!
 - Feel free to fork this repo and submit pull requests.

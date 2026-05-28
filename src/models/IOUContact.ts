@@ -32,8 +32,4 @@ const IOUContactSchema = new mongoose.Schema({
 // Compound index to ensure uniqueness per user
 IOUContactSchema.index({ name: 1, user: 1 }, { unique: true });
 
-if (process.env.NODE_ENV === 'development') {
-  delete mongoose.models.IOUContact;
-}
-
 export default mongoose.models.IOUContact || mongoose.model('IOUContact', IOUContactSchema);

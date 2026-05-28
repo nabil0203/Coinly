@@ -7,8 +7,26 @@ import bcrypt from 'bcryptjs';
 import { signToken, setAuthCookie, removeAuthCookie } from '@/lib/auth';
 import { LoginSchema, RegistrationSchema } from '@/lib/validations';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { authRatelimit } from '@/lib/ratelimit';
+
+async function getClientIp(): Promise<string> {
+  const headersList = await headers();
+  return (
+    headersList.get('x-forwarded-for')?.split(',')[0].trim() ??
+    headersList.get('x-real-ip') ??
+    '127.0.0.1'
+  );
+}
 
 export async function registerAction(formData: FormData) {
+  // Rate limiting — max 5 attempts per 60s per IP
+  const ip = await getClientIp();
+  const { success: allowed } = await authRatelimit.limit(`register:${ip}`);
+  if (!allowed) {
+    return { error: 'Too many attempts. Please wait a minute and try again.' };
+  }
+
   await dbConnect();
 
   const formDataObj = {
@@ -65,6 +83,13 @@ export async function registerAction(formData: FormData) {
 }
 
 export async function loginAction(formData: FormData) {
+  // Rate limiting — max 5 attempts per 60s per IP
+  const ip = await getClientIp();
+  const { success: allowed } = await authRatelimit.limit(`login:${ip}`);
+  if (!allowed) {
+    return { error: 'Too many attempts. Please wait a minute and try again.' };
+  }
+
   await dbConnect();
 
   const formDataObj = {

@@ -125,7 +125,7 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
               {/* Expense Button */}
               <button
                 onClick={() => openModal('expense', todayStr)}
-                className="group flex flex-col lg:flex-row items-center p-4 lg:p-6 bg-[#1E293B] border border-[#334155] rounded-2xl lg:rounded-3xl hover:border-[#F43F5E]/40 hover:shadow-[0_8px_24px_rgba(244,63,94,0.12)] hover:-translate-y-0.5 transition-all duration-300 w-full text-center lg:text-left interactive-card"
+                className="group flex flex-col lg:flex-row items-center p-4 lg:p-6 bg-[#1E293B] border border-[#334155] rounded-2xl lg:rounded-3xl hover:border-[#F43F5E]/40 hover:shadow-[0_8px_24px_rgba(244,63,94,0.12)] hover:-translate-y-0.5 transition-all duration-300 w-full text-center lg:text-left interactive-card cursor-pointer"
               >
                 <div className="w-10 h-10 lg:w-14 lg:h-14 bg-[#F43F5E]/10 text-[#F43F5E] rounded-xl lg:rounded-2xl flex items-center justify-center border border-[#F43F5E]/20 group-hover:bg-[#F43F5E] group-hover:text-white group-hover:scale-110 group-hover:shadow-[0_0_16px_rgba(244,63,94,0.5)] transition-all duration-300 shrink-0">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 lg:w-7 lg:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -140,7 +140,7 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
               {/* Cash In Button */}
               <button
                 onClick={() => openModal('cashin', todayStr)}
-                className="group flex flex-col lg:flex-row items-center p-4 lg:p-6 bg-[#1E293B] border border-[#334155] rounded-2xl lg:rounded-3xl hover:border-[#22C55E]/40 hover:shadow-[0_8px_24px_rgba(34,197,94,0.12)] hover:-translate-y-0.5 transition-all duration-300 w-full text-center lg:text-left interactive-card"
+                className="group flex flex-col lg:flex-row items-center p-4 lg:p-6 bg-[#1E293B] border border-[#334155] rounded-2xl lg:rounded-3xl hover:border-[#22C55E]/40 hover:shadow-[0_8px_24px_rgba(34,197,94,0.12)] hover:-translate-y-0.5 transition-all duration-300 w-full text-center lg:text-left interactive-card cursor-pointer"
               >
                 <div className="w-10 h-10 lg:w-14 lg:h-14 bg-[#22C55E]/10 text-[#22C55E] rounded-xl lg:rounded-2xl flex items-center justify-center border border-[#22C55E]/20 group-hover:bg-[#22C55E] group-hover:text-white group-hover:scale-110 group-hover:shadow-[0_0_16px_rgba(34,197,94,0.5)] transition-all duration-300 shrink-0">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 lg:w-7 lg:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

@@ -40,8 +40,9 @@ const EntrySchema = new mongoose.Schema({
   timestamps: true,
 });
 
-if (process.env.NODE_ENV === 'development') {
-  delete mongoose.models.Entry;
-}
+// Indexes for common query patterns
+EntrySchema.index({ user: 1, date: 1 });  // Monthly ledger view
+EntrySchema.index({ user: 1, type: 1 });  // Aggregation by type
+
 const Entry = mongoose.models.Entry || mongoose.model('Entry', EntrySchema);
 export default Entry;

@@ -41,8 +41,8 @@ const IOUTransactionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-if (process.env.NODE_ENV === 'development') {
-  delete mongoose.models.IOUTransaction;
-}
+// Index for contact history queries
+IOUTransactionSchema.index({ contact: 1, user: 1 });
+
 const IOUTransaction = mongoose.models.IOUTransaction || mongoose.model('IOUTransaction', IOUTransactionSchema);
 export default IOUTransaction;

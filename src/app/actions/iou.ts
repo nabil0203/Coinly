@@ -1,5 +1,6 @@
 'use server';
 
+import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import IOUContact from '@/models/IOUContact';
 import IOUTransaction from '@/models/IOUTransaction';
@@ -15,17 +16,30 @@ export async function getIOUContacts() {
 
   const contacts = await IOUContact.find({ user: user.userId }).sort({ name: 1 });
 
-  // Auto-backfill primary_type for pre-existing contacts that don't have it set yet.
-  // This helps identify which section settled contacts belong to.
+  // Auto-backfill primary_type for pre-existing contacts that don't have it set.
+  // Uses a single $lookup aggregation instead of N+1 queries.
   const needsBackfill = contacts.filter((c: { primary_type?: string }) => !c.primary_type);
   if (needsBackfill.length > 0) {
-    await Promise.all(needsBackfill.map(async (contact: { _id?: string; primary_type?: string; save: () => Promise<void> }) => {
-      const tx = await IOUTransaction.findOne({ contact: contact._id, user: user.userId }).sort({ date: 1, createdAt: 1 });
-      if (tx) {
-        contact.primary_type = tx.iou_type;
-        await contact.save();
-      }
-    }));
+    const contactIds = needsBackfill.map((c: { _id: string }) => c._id);
+
+    // Single aggregation: join the earliest transaction per contact
+    const firstTxByContact: { _id: string; iou_type: string }[] = await IOUTransaction.aggregate([
+      { $match: { contact: { $in: contactIds }, user: new Types.ObjectId(user.userId) } },
+      { $sort: { date: 1, createdAt: 1 } },
+      { $group: { _id: '$contact', iou_type: { $first: '$iou_type' } } },
+    ]);
+
+    const typeMap = new Map(firstTxByContact.map(tx => [tx._id.toString(), tx.iou_type]));
+
+    // Batch-save only contacts that actually have a transaction
+    await Promise.all(
+      needsBackfill
+        .filter((c: { _id: string }) => typeMap.has(c._id.toString()))
+        .map(async (contact: { _id: string; primary_type?: string; save: () => Promise<void> }) => {
+          contact.primary_type = typeMap.get(contact._id.toString());
+          await contact.save();
+        })
+    );
   }
 
   return JSON.parse(JSON.stringify(contacts));

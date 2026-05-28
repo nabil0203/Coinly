@@ -1,7 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-it-in-prod';
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set. The app cannot start without it.');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 interface AuthUser {
   userId: string;
@@ -9,7 +12,7 @@ interface AuthUser {
 }
 
 export async function signToken(payload: AuthUser) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
 }
 
 async function verifyToken(token: string): Promise<AuthUser | null> {
@@ -26,7 +29,7 @@ export async function setAuthCookie(token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 60 * 60 * 24, // 1 day in seconds
+    maxAge: 60 * 60 * 8, // 8 hours in seconds
     path: '/',
   });
 }

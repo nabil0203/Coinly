@@ -29,15 +29,19 @@ interface IOUData {
 }
 
 // Helper for IOU side-effects
-async function handleIOUEffect(entry: EntryDoc, iouData: IOUData, isReversal = false) {
+async function handleIOUEffect(
+  entry: EntryDoc,
+  iouData: IOUData,
+  isReversal = false,
+  session?: mongoose.ClientSession
+) {
   const { contactId, iouType, iouAction, details } = iouData;
-  const contact = await IOUContact.findById(contactId);
+  const contact = await IOUContact.findById(contactId).session(session ?? null);
   if (!contact) return;
 
   const multiplier = isReversal ? -1 : 1;
   const amount = entry.amount * multiplier;
 
-  console.log(`[IOU] Applying effect: ${iouType} ${iouAction} reversal=${isReversal} name=${contact.name} amount=${amount}`);
   if (iouType === 'receivable') {
     contact.total_receivable += (iouAction === 'create' ? amount : -amount);
   } else if (iouType === 'debt') {
@@ -47,23 +51,24 @@ async function handleIOUEffect(entry: EntryDoc, iouData: IOUData, isReversal = f
   if (!contact.primary_type) {
     contact.primary_type = iouType;
   }
-  await contact.save();
-  console.log(`[IOU] Contact balance updated: receivable=${contact.total_receivable} debt=${contact.total_debt}`);
+  await contact.save({ session });
 
   if (isReversal) {
-    const delResult = await IOUTransaction.deleteOne({ entry: entry._id });
-    console.log(`[IOU] Transaction deleted for entry ${entry._id}:`, delResult);
+    await IOUTransaction.deleteOne({ entry: entry._id }).session(session ?? null);
   } else {
-    await IOUTransaction.create({
-      contact: contactId,
-      entry: entry._id,
-      iou_type: iouType,
-      iou_action: iouAction,
-      amount: entry.amount,
-      date: entry.date,
-      user: entry.user,
-      details: details // Save the extra details
-    });
+    await IOUTransaction.create(
+      [{
+        contact: contactId,
+        entry: entry._id,
+        iou_type: iouType,
+        iou_action: iouAction,
+        amount: entry.amount,
+        date: entry.date,
+        user: entry.user,
+        details,
+      }],
+      { session }
+    );
   }
 }
 
@@ -161,33 +166,38 @@ export async function addEntry(type: 'expense' | 'cashin', payload: EntryPayload
   const parsed = z.array(EntryPayloadSchema).safeParse(payloadsArray);
   if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
-  for (const p of parsed.data) {
-    const entry = await Entry.create({
-      ...p,
-      type,
-      user: user.userId,
-      is_iou: !!p.iou
-    });
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    for (const p of parsed.data) {
+      const [entry] = await Entry.create(
+        [{ ...p, type, user: user.userId, is_iou: !!p.iou }],
+        { session }
+      );
 
-    // Update payment method balance
-    const method = await PaymentMethod.findOne({ name: p.payment_method, user: user.userId });
-    if (method) {
-      if (type === 'cashin') {
-        method.balance += p.amount;
-      } else {
-        method.balance -= p.amount;
+      // Update payment method balance
+      const method = await PaymentMethod.findOne({ name: p.payment_method, user: user.userId }).session(session);
+      if (method) {
+        method.balance += type === 'cashin' ? p.amount : -p.amount;
+        await method.save({ session });
       }
-      await method.save();
-    }
 
-    // Handle IOU logic
-    if (p.iou) {
-      await handleIOUEffect(entry, p.iou);
-      const iouTx = await IOUTransaction.findOne({ entry: entry._id }).select('_id');
-      if (iouTx) {
-          await Entry.findByIdAndUpdate(entry._id, { iou_details: iouTx._id });
+      // Handle IOU logic
+      if (p.iou) {
+        await handleIOUEffect(entry, p.iou, false, session);
+        const iouTx = await IOUTransaction.findOne({ entry: entry._id }).select('_id').session(session);
+        if (iouTx) {
+          await Entry.findByIdAndUpdate(entry._id, { iou_details: iouTx._id }, { session });
+        }
       }
     }
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
   }
 
   revalidatePath('/');
@@ -204,54 +214,57 @@ export async function updateEntry(type: 'expense' | 'cashin', id: string, payloa
   const user = await getCurrentUser();
   if (!user) throw new Error('Unauthorized');
 
-  const oldEntry = await Entry.findOne({ _id: id, user: user.userId });
-  if (!oldEntry) throw new Error('Entry not found');
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const oldEntry = await Entry.findOne({ _id: id, user: user.userId }).session(session);
+    if (!oldEntry) throw new Error('Entry not found');
 
-  // Revert old IOU effect first
-  if (oldEntry.is_iou) {
-    const oldTransaction = await IOUTransaction.findOne({ entry: oldEntry._id });
-    if (oldTransaction) {
+    // Revert old IOU effect first
+    if (oldEntry.is_iou) {
+      const oldTransaction = await IOUTransaction.findOne({ entry: oldEntry._id }).session(session);
+      if (oldTransaction) {
         await handleIOUEffect(oldEntry, {
-            contactId: oldTransaction.contact,
-            iouType: oldTransaction.iou_type,
-            iouAction: oldTransaction.iou_action
-        }, true);
+          contactId: oldTransaction.contact,
+          iouType: oldTransaction.iou_type,
+          iouAction: oldTransaction.iou_action
+        }, true, session);
+      }
     }
-  }
 
-  // Revert old payment method balance
-  const oldMethod = await PaymentMethod.findOne({ name: oldEntry.payment_method, user: user.userId });
-  if (oldMethod) {
-    if (oldEntry.type === 'cashin') {
-      oldMethod.balance -= oldEntry.amount;
-    } else {
-      oldMethod.balance += oldEntry.amount;
+    // Revert old payment method balance
+    const oldMethod = await PaymentMethod.findOne({ name: oldEntry.payment_method, user: user.userId }).session(session);
+    if (oldMethod) {
+      oldMethod.balance += oldEntry.type === 'cashin' ? -oldEntry.amount : oldEntry.amount;
+      await oldMethod.save({ session });
     }
-    await oldMethod.save();
-  }
 
-  // Update entry
-  Object.assign(oldEntry, parsed.data);
-  oldEntry.is_iou = !!parsed.data.iou;
-  await oldEntry.save();
+    // Update entry
+    Object.assign(oldEntry, parsed.data);
+    oldEntry.is_iou = !!parsed.data.iou;
+    await oldEntry.save({ session });
 
-  // Apply new payment method balance
-  const newMethod = await PaymentMethod.findOne({ name: parsed.data.payment_method, user: user.userId });
-  if (newMethod) {
-    if (type === 'cashin') {
-      newMethod.balance += parsed.data.amount;
-    } else {
-      newMethod.balance -= parsed.data.amount;
+    // Apply new payment method balance
+    const newMethod = await PaymentMethod.findOne({ name: parsed.data.payment_method, user: user.userId }).session(session);
+    if (newMethod) {
+      newMethod.balance += type === 'cashin' ? parsed.data.amount : -parsed.data.amount;
+      await newMethod.save({ session });
     }
-    await newMethod.save();
-  }
 
-  // Apply new IOU effect
-  if (parsed.data.iou) {
-    await handleIOUEffect(oldEntry, parsed.data.iou);
-    const iouTx = await IOUTransaction.findOne({ entry: oldEntry._id }).select('_id');
-    oldEntry.iou_details = iouTx?._id;
-    await oldEntry.save();
+    // Apply new IOU effect
+    if (parsed.data.iou) {
+      await handleIOUEffect(oldEntry, parsed.data.iou, false, session);
+      const iouTx = await IOUTransaction.findOne({ entry: oldEntry._id }).select('_id').session(session);
+      oldEntry.iou_details = iouTx?._id;
+      await oldEntry.save({ session });
+    }
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
   }
 
   revalidatePath('/');
@@ -265,36 +278,38 @@ export async function deleteEntry(type: 'expense' | 'cashin', id: string) {
   const user = await getCurrentUser();
   if (!user) throw new Error('Unauthorized');
 
-  const entry = await Entry.findOne({ _id: id, user: user.userId });
-  if (!entry) throw new Error('Entry not found');
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const entry = await Entry.findOne({ _id: id, user: user.userId }).session(session);
+    if (!entry) throw new Error('Entry not found');
 
-  // Revert IOU effect
-  // We check for transaction existence as a fallback even if flag is missing
-  console.log(`[IOU] Checking entry ${id} for IOU reversal...`);
-  const iouTx = await IOUTransaction.findOne({ entry: entry._id });
-  if (iouTx) {
-      console.log(`[IOU] Found associated transaction ${iouTx._id}. Reverting...`);
+    // Revert IOU effect if present
+    const iouTx = await IOUTransaction.findOne({ entry: entry._id }).session(session);
+    if (iouTx) {
       await handleIOUEffect(entry, {
-          contactId: iouTx.contact,
-          iouType: iouTx.iou_type,
-          iouAction: iouTx.iou_action
-      }, true);
-  } else if (entry.is_iou) {
-      console.log(`[IOU] entry.is_iou is true but no transaction found for ${entry._id}`);
-  }
-
-  // Revert payment method balance
-  const method = await PaymentMethod.findOne({ name: entry.payment_method, user: user.userId });
-  if (method) {
-    if (entry.type === 'cashin') {
-      method.balance -= entry.amount;
-    } else {
-      method.balance += entry.amount;
+        contactId: iouTx.contact,
+        iouType: iouTx.iou_type,
+        iouAction: iouTx.iou_action
+      }, true, session);
     }
-    await method.save();
-  }
 
-  await Entry.deleteOne({ _id: id });
+    // Revert payment method balance
+    const method = await PaymentMethod.findOne({ name: entry.payment_method, user: user.userId }).session(session);
+    if (method) {
+      method.balance += entry.type === 'cashin' ? -entry.amount : entry.amount;
+      await method.save({ session });
+    }
+
+    await Entry.deleteOne({ _id: id }).session(session);
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
 
   revalidatePath('/');
   revalidatePath('/ledger');
