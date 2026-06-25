@@ -170,6 +170,26 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
                 </svg>
               </Link>
 
+              
+              {/* Mandatory Expenses */}
+              <Link
+                href="/mandatory"
+                className="col-span-2 group flex items-center p-5 lg:p-6 bg-[#1E293B] border border-[#334155] rounded-2xl lg:rounded-3xl hover:border-[#F59E0B]/30 hover:shadow-[0_8px_24px_rgba(245,158,11,0.08)] hover:-translate-y-0.5 transition-all duration-300 w-full text-left interactive-card"
+              >
+                <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl flex items-center justify-center border border-[#F59E0B]/20 transition-all duration-300 shrink-0 bg-[#F59E0B]/10 text-[#F59E0B] group-hover:bg-[#F59E0B] group-hover:text-white group-hover:border-[#F59E0B] group-hover:scale-110 group-hover:shadow-[0_0_16px_rgba(245,158,11,0.5)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 lg:w-7 lg:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <div className="ml-4 lg:ml-5">
+                  <h3 className="text-sm lg:text-lg font-bold text-[#F8FAFC] leading-tight">Mandatory Expenses</h3>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-auto text-[#334155] group-hover:text-[#F59E0B] group-hover:translate-x-1 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+              
+
               {/* Debt & Receivable */}
               <Link
                 href="/debts"

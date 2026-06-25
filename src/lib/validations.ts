@@ -50,3 +50,9 @@ export const ChangePasswordSchema = z.object({
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
+
+export const MandatoryExpenseSchema = z.object({
+  name: z.string().trim().min(1, "Expense name is required").max(200),
+  amount: z.number().min(0, "Amount cannot be negative"),
+  default_payment_method: z.string().trim().optional().default(''),
+});
