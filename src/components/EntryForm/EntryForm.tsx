@@ -29,17 +29,20 @@ interface EntryFormProps {
   editEntry?: EditingEntry | null;
 }
 
+const makeDefaultEntry = (type: 'expense' | 'cashin', defaultMethod: string): Entry => ({
+  description: '',
+  amount: '',
+  payment_method: defaultMethod,
+  is_iou: false,
+  iou_contact_id: '',
+  iou_type: type === 'expense' ? 'receivable' : 'debt',
+  iou_action: 'create',
+  iou_details: ''
+});
+
 export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, paymentMethods, editEntry = null }: EntryFormProps) {
-  const [entries, setEntries] = useState<Entry[]>([{ 
-    description: '', 
-    amount: '', 
-    payment_method: '',
-    is_iou: false,
-    iou_contact_id: '',
-    iou_type: type === 'expense' ? 'receivable' : 'debt',
-    iou_action: 'create',
-    iou_details: ''
-  }]);
+  const defaultMethod = paymentMethods.length > 0 ? paymentMethods[0].name : 'Cash';
+  const [entries, setEntries] = useState<Entry[]>([makeDefaultEntry(type, '')]);
   const [selectedDate, setSelectedDate] = useState(dateStr);
   const [iouContacts, setIouContacts] = useState<{ _id?: string; name?: string; total_receivable?: number; total_debt?: number; [key: string]: unknown }[]>([]);
   const [newContactName, setNewContactName] = useState('');
@@ -48,7 +51,6 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isEditing = !!editEntry;
-  const defaultMethod = paymentMethods.length > 0 ? paymentMethods[0].name : 'Cash';
 
   useEffect(() => {
     if (isOpen) {
@@ -75,16 +77,7 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
         }]);
         setSelectedDate(editEntry.date || dateStr);
       } else {
-        setEntries([{ 
-          description: '', 
-          amount: '', 
-          payment_method: defaultMethod,
-          is_iou: false,
-          iou_contact_id: '',
-          iou_type: type === 'expense' ? 'receivable' : 'debt',
-          iou_action: 'create',
-          iou_details: ''
-        }]);
+        setEntries([makeDefaultEntry(type, defaultMethod)]);
         setSelectedDate(dateStr);
       }
     }
@@ -93,16 +86,7 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
   if (!isOpen) return null;
 
   const handleAddMore = () => {
-    setEntries([...entries, { 
-      description: '', 
-      amount: '', 
-      payment_method: defaultMethod,
-      is_iou: false,
-      iou_contact_id: '',
-      iou_type: type === 'expense' ? 'receivable' : 'debt',
-      iou_action: 'create',
-      iou_details: ''
-    }]);
+    setEntries([...entries, makeDefaultEntry(type, defaultMethod)]);
   };
 
   const handleRemoveEntry = (index: number) => {

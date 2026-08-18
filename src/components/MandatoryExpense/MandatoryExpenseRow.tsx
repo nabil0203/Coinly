@@ -68,7 +68,6 @@ export function MandatoryExpenseRow({
         </div>
       ) : (
         /* Display Mode */
-        /* Display Mode */
         <div className="flex items-center gap-2 sm:gap-3 group">
           
           {/* Details Box */}

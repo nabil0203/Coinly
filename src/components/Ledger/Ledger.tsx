@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { EntryForm } from '../EntryForm/EntryForm';
 import { addEntry, updateEntry, deleteEntry, type EntryPayload } from '@/app/actions/ledger';
@@ -19,18 +19,14 @@ interface LedgerProps {
   initialYear: number;
 }
 
-const getDaysInMonth = (year: number, month: number) => {
-  return new Date(year, month + 1, 0).getDate();
-}
+const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 
 function calculateSpans(entryCount: number, totalRows: number): number[] {
   if (entryCount === 0) return [totalRows];
   const baseSpan = Math.floor(totalRows / entryCount);
   const extra = totalRows % entryCount;
   const spans = new Array(entryCount).fill(baseSpan);
-  for (let i = 0; i < extra; i++) {
-    spans[i]++;
-  }
+  for (let i = 0; i < extra; i++) spans[i]++;
   return spans;
 }
 
@@ -44,61 +40,39 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
   const [targetDate, setTargetDate] = useState('');
   const [editEntry, setEditEntry] = useState<LedgerEntry | null>(null);
 
-  const [prevProps, setPrevProps] = useState({ initialMonth, initialYear });
-  if (prevProps.initialMonth !== initialMonth || prevProps.initialYear !== initialYear) {
-    setPrevProps({ initialMonth, initialYear });
+  // Sync currentDate when URL params change (Next.js re-renders with new props)
+  useEffect(() => {
     setCurrentDate(new Date(initialYear, initialMonth, 1));
-  }
+  }, [initialMonth, initialYear]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const daysInMonth = getDaysInMonth(year, month);
 
-  const handlePrevMonth = () => {
-    const prev = new Date(currentDate);
-    prev.setMonth(prev.getMonth() - 1);
-    setCurrentDate(prev);
-    router.push(`/ledger?month=${prev.getMonth()}&year=${prev.getFullYear()}`);
-  };
-
-  const handleNextMonth = () => {
-    const next = new Date(currentDate);
-    next.setMonth(next.getMonth() + 1);
-    setCurrentDate(next);
-    router.push(`/ledger?month=${next.getMonth()}&year=${next.getFullYear()}`);
-  };
-
-  const handleCurrentMonth = () => {
-    const now = new Date();
-    setCurrentDate(now);
-    router.push(`/ledger?month=${now.getMonth()}&year=${now.getFullYear()}`);
+  const navigateTo = (date: Date) => {
+    setCurrentDate(date);
+    router.push(`/ledger?month=${date.getMonth()}&year=${date.getFullYear()}`);
   };
 
   const monthName = currentDate.toLocaleString('default', { month: 'long' });
 
-  const activeMethods = paymentMethods ? paymentMethods.map(pm => pm.name) : [];
-  const historicalMethods = new Set<string>();
-
-  if (initialData.expenses) {
-    Object.values(initialData.expenses).flat().forEach((e: LedgerEntry) => historicalMethods.add(e.payment_method));
-  }
-  if (initialData.cashin) {
-    Object.values(initialData.cashin).flat().forEach((c: LedgerEntry) => historicalMethods.add(c.payment_method));
-  }
-
-  const allMethodsSet = new Set([...activeMethods, ...historicalMethods]);
-  const allMethods = Array.from(allMethodsSet).sort((a: string, b: string) => {
-    const aLower = a.toLowerCase();
-    const bLower = b.toLowerCase();
-    if (aLower === 'cash') return -1;
-    if (bLower === 'cash') return 1;
+  // Merge active payment method names with any historical methods in the data
+  const allMethods = Array.from(
+    new Set([
+      ...(paymentMethods ? paymentMethods.map(pm => pm.name) : []),
+      ...Object.values(initialData.expenses ?? {}).flat().map((e: LedgerEntry) => e.payment_method),
+      ...Object.values(initialData.cashin ?? {}).flat().map((c: LedgerEntry) => c.payment_method),
+    ])
+  ).sort((a, b) => {
+    if (a.toLowerCase() === 'cash') return -1;
+    if (b.toLowerCase() === 'cash') return 1;
     return a.localeCompare(b);
   });
 
   const rows: LedgerRow[] = [];
   let runningBalance = Number(initialData.prevBalance);
-
-  const totals = { exAll: 0, inAll: 0 };
+  let totalExpense = 0;
+  let totalIncome = 0;
 
   for (let day = 1; day <= daysInMonth; day++) {
     const padMonth = String(month + 1).padStart(2, '0');
@@ -113,62 +87,60 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
     const expSpans = calculateSpans(expenses.length, rowCount);
     const incSpans = calculateSpans(cashins.length, rowCount);
 
-    let expIdx = 0;
-    let expRowCounter = 0;
-    let incIdx = 0;
-    let incRowCounter = 0;
+    let expIdx = 0, expRowCounter = 0;
+    let incIdx = 0, incRowCounter = 0;
     let dailyExpenseTotal = 0;
 
     for (let i = 0; i < rowCount; i++) {
-        const rowProps: Partial<LedgerRow> = {
-          isFirst: i === 0,
-          isLast: i === rowCount - 1,
-          day, dayName, dateStr, rowCount,
-          index: rows.length
-        };
+      const rowProps: Partial<LedgerRow> = {
+        isFirst: i === 0,
+        isLast: i === rowCount - 1,
+        day, dayName, dateStr, rowCount,
+        index: rows.length
+      };
 
-        if (expRowCounter === 0) {
-            rowProps.exp = expenses[expIdx] || null;
-            rowProps.expSpan = expSpans[expIdx];
-            rowProps.isExpStart = true;
-            expRowCounter = expSpans[expIdx];
-            expIdx++;
-        } else {
-            rowProps.exp = null;
-            rowProps.isExpStart = false;
-            rowProps.expSpan = undefined;
-        }
-        expRowCounter--;
+      if (expRowCounter === 0) {
+        rowProps.exp = expenses[expIdx] || null;
+        rowProps.expSpan = expSpans[expIdx];
+        rowProps.isExpStart = true;
+        expRowCounter = expSpans[expIdx];
+        expIdx++;
+      } else {
+        rowProps.exp = null;
+        rowProps.isExpStart = false;
+        rowProps.expSpan = undefined;
+      }
+      expRowCounter--;
 
-        if (incRowCounter === 0) {
-            rowProps.inc = cashins[incIdx] || null;
-            rowProps.incSpan = incSpans[incIdx];
-            rowProps.isIncStart = true;
-            incRowCounter = incSpans[incIdx];
-            incIdx++;
-        } else {
-            rowProps.inc = null;
-            rowProps.isIncStart = false;
-            rowProps.incSpan = undefined;
-        }
-        incRowCounter--;
+      if (incRowCounter === 0) {
+        rowProps.inc = cashins[incIdx] || null;
+        rowProps.incSpan = incSpans[incIdx];
+        rowProps.isIncStart = true;
+        incRowCounter = incSpans[incIdx];
+        incIdx++;
+      } else {
+        rowProps.inc = null;
+        rowProps.isIncStart = false;
+        rowProps.incSpan = undefined;
+      }
+      incRowCounter--;
 
-        const exp = rowProps.exp as LedgerEntry | null;
-        const inc = rowProps.inc as LedgerEntry | null;
-  
-        if (exp) {
-          const amt = Number(exp.amount);
-          dailyExpenseTotal += amt;
-          totals.exAll += amt;
-          runningBalance -= amt;
-        }
-        if (inc) {
-          const amt = Number(inc.amount);
-          totals.inAll += amt;
-          runningBalance += amt;
-        }
-  
-        rows.push({ ...rowProps, currentBalance: runningBalance } as LedgerRow);
+      const exp = rowProps.exp as LedgerEntry | null;
+      const inc = rowProps.inc as LedgerEntry | null;
+
+      if (exp) {
+        const amt = Number(exp.amount);
+        dailyExpenseTotal += amt;
+        totalExpense += amt;
+        runningBalance -= amt;
+      }
+      if (inc) {
+        const amt = Number(inc.amount);
+        totalIncome += amt;
+        runningBalance += amt;
+      }
+
+      rows.push({ ...rowProps, currentBalance: runningBalance } as LedgerRow);
     }
 
     if (rows.length > 0) {
@@ -189,6 +161,14 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
     setTargetDate(date);
     setEditEntry(entry);
     setModalOpen(true);
+  };
+
+  // Returns today's date string if viewing the current month, otherwise the 1st of the month
+  const getDefaultDate = () => {
+    const now = new Date();
+    const isCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
+    const day = isCurrentMonth ? now.getDate() : 1;
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   };
 
   const handleEntrySubmit = async (type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[], id?: string) => {
@@ -222,9 +202,10 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
     <div className="h-full flex flex-col bg-[#0F172A] overflow-hidden">
       {/* Sub-header / Quick Actions */}
       <div
-        className="px-4 md:px-10 py-2 bg-[#1E293B] border-b border-[#334155] flex flex-wrap items-center justify-between gap-3"
+        className="px-4 md:px-10 py-2 bg-[#1E293B] border-b border-[#334155] flex flex-wrap items-center justify-between gap-2"
         style={{ animation: 'slide-in-top 0.3s ease-out both' }}
       >
+        {/* Left: Title + Month Nav */}
         <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar">
           <h2 className="text-sm md:text-base font-bold text-[#F8FAFC] flex items-center gap-2 whitespace-nowrap">
             <span className="w-2 h-6 bg-[#6366F1] rounded-full"></span>
@@ -233,7 +214,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
 
           <div className="flex items-center bg-[#263347] rounded-full px-1.5 py-0.5 border border-[#334155] shadow-sm">
             <button
-              onClick={handlePrevMonth}
+              onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() - 1); navigateTo(d); }}
               className="p-1 hover:bg-[#334155] hover:text-[#F8FAFC] rounded-full transition-all text-[#94A3B8] active:scale-90"
               title="Previous Month"
             >
@@ -245,7 +226,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
               {monthName} {year}
             </div>
             <button
-              onClick={handleNextMonth}
+              onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); navigateTo(d); }}
               className="p-1 hover:bg-[#334155] hover:text-[#F8FAFC] rounded-full transition-all text-[#94A3B8] active:scale-90"
               title="Next Month"
             >
@@ -256,7 +237,30 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
           </div>
         </div>
 
-        <div className="flex gap-2 items-center">
+        {/* Right: All action buttons */}
+        <div className="flex gap-2 items-center flex-wrap">
+          {/* Quick Add Expense */}
+          <button
+            onClick={() => openModal('expense', getDefaultDate())}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F43F5E]/10 text-[#F43F5E] rounded-lg font-bold hover:bg-[#F43F5E]/20 hover:text-[#FB7185] transition-all text-xs border border-[#F43F5E]/30 shadow-sm active:scale-95 whitespace-nowrap"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Expense
+          </button>
+          {/* Quick Add Cash In */}
+          <button
+            onClick={() => openModal('cashin', getDefaultDate())}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#22C55E]/10 text-[#22C55E] rounded-lg font-bold hover:bg-[#22C55E]/20 hover:text-[#4ADE80] transition-all text-xs border border-[#22C55E]/30 shadow-sm active:scale-95 whitespace-nowrap"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Cash In
+          </button>
+
+          {/* View toggle */}
           <div className="flex bg-[#0F172A] p-1 rounded-xl border border-[#334155]">
             <button
               onClick={() => setViewMode('table')}
@@ -278,8 +282,9 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
             </button>
           </div>
 
+          {/* Current Month */}
           <button
-            onClick={handleCurrentMonth}
+            onClick={() => navigateTo(new Date())}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#263347] text-[#6366F1] rounded-lg font-bold hover:bg-[#334155] hover:text-[#818CF8] transition-all text-xs border border-[#334155] shadow-sm active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -289,6 +294,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
           </button>
         </div>
       </div>
+
 
       <div className="flex-1 overflow-hidden relative">
         {viewMode === 'table' ? (
@@ -310,36 +316,49 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
         )}
       </div>
 
-      <div className="bg-[#1E293B] border-t border-[#334155] py-2 px-3 md:px-10 shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.3)] z-30 flex items-center justify-between gap-2 md:gap-4 overflow-hidden">
-        <div className="flex gap-3 md:gap-8 border-r border-[#334155] pr-3 md:pr-8 h-full items-center shrink-0">
-          <div className="flex flex-col">
-            <span className="text-[9px] md:text-[10px] uppercase font-bold text-[#94A3B8] leading-tight">{monthName} Expense</span>
-            <span className="text-xs md:text-lg font-black text-[#F43F5E]">৳{totals.exAll.toLocaleString()}</span>
+      <div className="bg-[#1E293B] border-t border-[#334155] shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.3)] z-30 flex flex-col md:flex-row md:items-center md:justify-between md:px-10 md:py-2 md:gap-4">
+        {/* Mobile top row / Desktop left: Expense + Cash In totals */}
+        <div className="flex items-center justify-between md:justify-start md:gap-8 md:border-r md:border-[#334155] md:pr-8 md:shrink-0 px-3 md:px-0 py-1.5 md:py-0 border-b border-[#334155]/60 md:border-b-0">
+          <div className="flex gap-4 md:gap-8 items-center">
+            <div className="flex flex-col">
+              <span className="text-[9px] md:text-[10px] uppercase font-bold text-[#94A3B8] leading-tight">{monthName} Expense</span>
+              <span className="text-xs md:text-lg font-black text-[#F43F5E]">৳{totalExpense.toLocaleString()}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] md:text-[10px] uppercase font-bold text-[#94A3B8] leading-tight">{monthName} Cash In</span>
+              <span className="text-xs md:text-lg font-black text-[#22C55E]">৳{totalIncome.toLocaleString()}</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[9px] md:text-[10px] uppercase font-bold text-[#94A3B8] leading-tight">{monthName} Cash In</span>
-            <span className="text-xs md:text-lg font-black text-[#22C55E]">৳{totals.inAll.toLocaleString()}</span>
+          {/* Total balance — only visible on mobile in this row */}
+          <div className="flex flex-col items-end shrink-0 md:hidden">
+            <span className="text-[9px] uppercase font-bold text-[#6366F1] leading-tight">Total Balance</span>
+            <span className="text-sm font-black text-[#F8FAFC] tracking-tight leading-tight whitespace-nowrap">
+              ৳{paymentMethods.reduce((acc, pm) => acc + (Number(pm.balance) || 0), 0).toLocaleString()}
+            </span>
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar border-r border-[#334155] px-2 md:px-8">
-          <div className="flex items-center gap-4 md:gap-8 justify-start md:justify-center">
+        {/* Mobile bottom row / Desktop middle: Payment method balances */}
+        <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar px-3 md:px-8 md:border-r md:border-[#334155] py-1.5 md:py-0">
+          <div className="flex items-center gap-4 md:gap-8 md:justify-center">
             {paymentMethods.map(pm => (
-              <div key={`footer-pm-${pm._id || pm.id}`} className="flex flex-col items-start md:items-end shrink-0">
-                <span className="text-[8px] md:text-xs uppercase font-bold text-[#94A3B8] leading-none mb-0.5">{pm.name}</span>
-                <span className="text-[11px] md:text-lg font-bold text-[#F8FAFC] whitespace-nowrap leading-none">৳{(Number(pm.balance) || 0).toLocaleString()}</span>
+              <div key={`footer-pm-${pm._id || pm.id}`} className="flex flex-col items-center shrink-0">
+                <span className="text-[9px] md:text-xs uppercase font-bold text-[#94A3B8] leading-none mb-0.5 whitespace-nowrap">{pm.name}</span>
+                <span className="text-xs md:text-lg font-bold text-[#F8FAFC] whitespace-nowrap leading-none">৳{(Number(pm.balance) || 0).toLocaleString()}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex flex-col items-end pl-1 md:pl-0 shrink-0">
-          <span className="text-[10px] md:text-xs uppercase font-bold text-[#6366F1] leading-tight">Total</span>
-          <span className="text-sm md:text-3xl font-black text-[#F8FAFC] tracking-tight leading-tight whitespace-nowrap">
+        {/* Desktop right: Total balance (hidden on mobile, shown in top row instead) */}
+        <div className="hidden md:flex flex-col items-end shrink-0">
+          <span className="text-xs uppercase font-bold text-[#6366F1] leading-tight">Total Balance</span>
+          <span className="text-3xl font-black text-[#F8FAFC] tracking-tight leading-tight whitespace-nowrap">
             ৳{paymentMethods.reduce((acc, pm) => acc + (Number(pm.balance) || 0), 0).toLocaleString()}
           </span>
         </div>
       </div>
+
 
       <EntryForm 
         isOpen={modalOpen} 

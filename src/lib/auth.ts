@@ -34,18 +34,14 @@ export async function setAuthCookie(token: string) {
   });
 }
 
-async function getAuthToken() {
-  const cookieStore = await cookies();
-  return cookieStore.get('coinly_token')?.value;
-}
-
 export async function removeAuthCookie() {
   const cookieStore = await cookies();
   cookieStore.delete('coinly_token');
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const token = await getAuthToken();
+  const cookieStore = await cookies();
+  const token = cookieStore.get('coinly_token')?.value;
   if (!token) return null;
   return verifyToken(token);
 }

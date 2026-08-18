@@ -148,7 +148,7 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
             </div>
           )}
 
-          {items.map((item, index) => (
+          {items.map((item) => (
             <MandatoryExpenseRow
               key={item._id}
               item={item}
