@@ -6,7 +6,6 @@ import { EntryForm } from '../EntryForm/EntryForm';
 import { addEntry, updateEntry, deleteEntry, type EntryPayload } from '@/app/actions/ledger';
 import { LedgerEntry, LedgerRow } from './types';
 import { LedgerTable } from './LedgerTable';
-import { LedgerCards } from './LedgerCards';
 
 interface LedgerProps {
   initialData: {
@@ -33,7 +32,6 @@ function calculateSpans(entryCount: number, totalRows: number): number[] {
 export function Ledger({ initialData, paymentMethods, initialMonth, initialYear }: LedgerProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(() => new Date(initialYear, initialMonth, 1));
-  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [isScrolled, setIsScrolled] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'expense' | 'cashin'>('expense');
@@ -55,6 +53,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
   };
 
   const monthName = currentDate.toLocaleString('default', { month: 'long' });
+  const shortMonthLabel = currentDate.toLocaleString('default', { month: 'short' }) + ` '${String(year).slice(-2)}`;
 
   // Merge active payment method names with any historical methods in the data
   const allMethods = Array.from(
@@ -222,8 +221,8 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
                 <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </button>
-            <div className="px-2 md:px-4 font-bold text-xs md:text-sm min-w-[100px] md:min-w-[140px] text-center text-[#6366F1] whitespace-nowrap">
-              {monthName} {year}
+            <div className="px-2 md:px-4 font-bold text-xs md:text-sm min-w-[70px] md:min-w-[90px] text-center text-[#6366F1] whitespace-nowrap">
+              {shortMonthLabel}
             </div>
             <button
               onClick={() => { const d = new Date(currentDate); d.setMonth(d.getMonth() + 1); navigateTo(d); }}
@@ -245,7 +244,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F43F5E]/10 text-[#F43F5E] rounded-lg font-bold hover:bg-[#F43F5E]/20 hover:text-[#FB7185] transition-all text-xs border border-[#F43F5E]/30 shadow-sm active:scale-95 whitespace-nowrap"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
             </svg>
             Expense
           </button>
@@ -260,27 +259,6 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
             Cash In
           </button>
 
-          {/* View toggle */}
-          <div className="flex bg-[#0F172A] p-1 rounded-xl border border-[#334155]">
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-[#334155] shadow-sm text-[#F8FAFC]' : 'text-[#94A3B8] hover:text-[#F8FAFC]'}`}
-              title="Table View"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9V7a1 1 0 011-1h5v8H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1V7a1 1 0 00-1-1h-4v8z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode('card')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'card' ? 'bg-[#334155] shadow-sm text-[#F8FAFC]' : 'text-[#94A3B8] hover:text-[#F8FAFC]'}`}
-              title="Card View"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-              </svg>
-            </button>
-          </div>
 
           {/* Current Month */}
           <button
@@ -290,30 +268,21 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
-            Current Month
+            Today
           </button>
         </div>
       </div>
 
 
       <div className="flex-1 overflow-hidden relative">
-        {viewMode === 'table' ? (
-          <LedgerTable 
-            rows={rows} 
-            allMethods={allMethods} 
-            monthName={monthName} 
-            isScrolled={isScrolled} 
-            handleScroll={handleScroll} 
-            openModal={openModal} 
-          />
-        ) : (
-          <LedgerCards 
-            rows={rows} 
-            year={year} 
-            monthName={monthName} 
-            openModal={openModal} 
-          />
-        )}
+        <LedgerTable 
+          rows={rows} 
+          allMethods={allMethods} 
+          monthName={monthName} 
+          isScrolled={isScrolled} 
+          handleScroll={handleScroll} 
+          openModal={openModal} 
+        />
       </div>
 
       <div className="bg-[#1E293B] border-t border-[#334155] shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.3)] z-30 flex flex-col md:flex-row md:items-center md:justify-between md:px-10 md:py-2 md:gap-4">
