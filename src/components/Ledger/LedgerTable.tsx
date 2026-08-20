@@ -61,8 +61,8 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
 
               {allMethods.map(m => (
                 r.isExpStart ? (
-                  <td 
-                    key={`ex-${r.index}-${m}`} 
+                  <td
+                    key={`ex-${r.index}-${m}`}
                     rowSpan={r.expSpan}
                     className="bg-[#E6FAF8] px-1 py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#A3EBE4] transition-colors align-middle text-slate-800"
                     onClick={() => !r.exp && openModal('expense', r.dateStr)}
@@ -97,8 +97,8 @@ export function LedgerTable({ rows, allMethods, monthName, isScrolled, handleScr
 
               {allMethods.map(m => (
                 r.isIncStart ? (
-                  <td 
-                    key={`in-${r.index}-${m}`} 
+                  <td
+                    key={`in-${r.index}-${m}`}
                     rowSpan={r.incSpan}
                     className="bg-[#FDF9E6] px-1 py-0.5 text-center font-medium tabular-nums cursor-pointer hover:bg-[#F9EAB3] transition-colors align-middle text-slate-800"
                     onClick={() => !r.inc && openModal('cashin', r.dateStr)}

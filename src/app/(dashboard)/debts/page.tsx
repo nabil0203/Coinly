@@ -33,78 +33,189 @@ export default async function DebtsPage() {
   const totalDebt = myDebts.reduce((acc: number, c: IOUContactType) => acc + (c.total_debt || 0), 0);
 
   return (
-    <div className="h-full overflow-y-auto w-full bg-[#0F172A]">
-      <div className="py-6 md:py-12 px-4 md:px-8 max-w-7xl mx-auto space-y-8 md:space-y-12">
+    <div className="h-full overflow-y-auto w-full relative" style={{ backgroundColor: '#080E1A' }}>
+      {/* ── Background Ambient Glow Orbs ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div
+          className="absolute -top-[10%] -right-[5%] w-[60%] h-[60%]"
+          style={{
+            borderRadius: '9999px',
+            filter: 'blur(130px)',
+            background: 'radial-gradient(circle, rgba(16,185,129,0.12) 0%, rgba(8,14,26,0) 70%)',
+            animation: 'glow-breathe 6s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute top-[40%] -left-[10%] w-[55%] h-[55%]"
+          style={{
+            borderRadius: '9999px',
+            filter: 'blur(140px)',
+            background: 'radial-gradient(circle, rgba(244,63,94,0.10) 0%, rgba(8,14,26,0) 70%)',
+            animation: 'glow-breathe 7s ease-in-out infinite 1.5s',
+          }}
+        />
+      </div>
 
-        {/* Header & Summaries */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 animate-in slide-in-top duration-500">
-          <div className="space-y-2">
-            <h2 className="text-3xl md:text-5xl font-black text-[#F8FAFC] tracking-tight leading-tight font-poppins">
-              Debt & <span className="text-[#22C55E]">Receivable</span>
+      <div className="relative z-10 py-6 md:py-10 px-4 md:px-8 max-w-7xl mx-auto space-y-8 md:space-y-10">
+
+        {/* ── Header & Summaries ── */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-end justify-between gap-6"
+          style={{ animation: 'slide-in-up 0.5s ease-out both' }}
+        >
+          <div className="space-y-1.5">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight" style={{ color: '#F1F5F9' }}>
+              Debt &amp;{' '}
+              <span style={{
+                background: 'linear-gradient(90deg, #34D399, #10B981)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>
+                Receivable
+              </span>
             </h2>
-            <p className="text-[#94A3B8] font-medium text-lg md:text-xl">Track your financial exchanges 💸</p>
+            <p className="font-medium text-sm md:text-base" style={{ color: '#94A3B8' }}>
+              Track money owed and money to collect.
+            </p>
           </div>
 
-          <div className="flex gap-4 md:gap-6">
-            <div className="bg-[#1E293B] border border-[#334155] rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex-1 min-w-[140px] md:min-w-[200px]">
-              <p className="text-[10px] md:text-xs font-black text-[#94A3B8] uppercase tracking-widest mb-1 md:mb-2">Total Debt</p>
-              <p className="text-xl md:text-3xl font-black text-[#F43F5E]">৳ {totalDebt.toLocaleString()}</p>
+          {/* Summary Metric Cards */}
+          <div className="grid grid-cols-2 gap-3 md:gap-5 w-full lg:w-auto">
+            {/* Total Debt Card */}
+            <div
+              className="rounded-2xl md:rounded-3xl p-4 md:p-5 flex-1 min-w-[140px] md:min-w-[180px] transition-all"
+              style={{
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+                backgroundColor: '#0F1929',
+                border: '1px solid rgba(244,63,94,0.22)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              }}
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#F43F5E]" />
+                <p className="text-[10px] md:text-xs font-black uppercase tracking-widest" style={{ color: '#94A3B8' }}>Total Debt</p>
+              </div>
+              <p className="text-xl md:text-2xl lg:text-3xl font-black tabular-nums" style={{ color: '#F43F5E' }}>
+                ৳ {totalDebt.toLocaleString()}
+              </p>
             </div>
-            <div className="bg-[#1E293B] border border-[#334155] rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex-1 min-w-[140px] md:min-w-[200px]">
-              <p className="text-[10px] md:text-xs font-black text-[#94A3B8] uppercase tracking-widest mb-1 md:mb-2">Total Receivable</p>
-              <p className="text-xl md:text-3xl font-black text-[#22C55E]">৳ {totalReceivable.toLocaleString()}</p>
+
+            {/* Total Receivable Card */}
+            <div
+              className="rounded-2xl md:rounded-3xl p-4 md:p-5 flex-1 min-w-[140px] md:min-w-[180px] transition-all"
+              style={{
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+                backgroundColor: '#0F1929',
+                border: '1px solid rgba(16,185,129,0.22)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              }}
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                <p className="text-[10px] md:text-xs font-black uppercase tracking-widest" style={{ color: '#94A3B8' }}>Total Receivable</p>
+              </div>
+              <p className="text-xl md:text-2xl lg:text-3xl font-black tabular-nums" style={{ color: '#10B981' }}>
+                ৳ {totalReceivable.toLocaleString()}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 animate-in fade-in duration-700 delay-200">
-
-          {/* My Debt Section */}
-          <div className="space-y-8">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-xl font-bold text-[#F8FAFC] flex items-center gap-3">
-                <span className="w-10 h-10 bg-[#F43F5E]/10 text-[#F43F5E] rounded-xl flex items-center justify-center border border-[#F43F5E]/20 shadow-sm font-black">
+        {/* ── Main Grid ── */}
+        <div
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10"
+          style={{ animation: 'slide-in-up 0.5s ease-out both', animationDelay: '120ms' }}
+        >
+          {/* ── My Debts Section ── */}
+          <div className="space-y-5">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-lg md:text-xl font-bold flex items-center gap-2.5" style={{ color: '#F1F5F9' }}>
+                <span
+                  className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center font-black text-sm"
+                  style={{
+                    background: 'rgba(244,63,94,0.12)',
+                    color: '#F43F5E',
+                    border: '1px solid rgba(244,63,94,0.25)',
+                  }}
+                >
                   -
                 </span>
                 My Debts
               </h3>
-              <span className="bg-[#F43F5E]/20 text-[#A22036] text-[13px] font-black px-3 py-1 rounded-full tracking-tighter shadow-sm whitespace-nowrap flex-shrink-0" style={{color: '#FDA4AF'}}>I owe people</span>
+              <span
+                className="text-xs font-black px-3 py-1 rounded-full whitespace-nowrap"
+                style={{
+                  background: 'rgba(244,63,94,0.10)',
+                  color: '#FB7185',
+                  border: '1px solid rgba(244,63,94,0.22)',
+                }}
+              >
+                I owe people
+              </span>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {myDebts.length > 0 ? (
                 myDebts.map((contact: IOUContactType) => (
                   <DebtReceivableCard key={contact._id} contact={contact} iouType="debt" />
                 ))
               ) : (
-                <div className="bg-[#1E293B] border border-[#334155] rounded-[2rem] py-20 px-10 text-center space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-                  <p className="text-[#94A3B8] font-medium">No pending debts found.</p>
+                <div
+                  className="rounded-3xl py-14 px-8 text-center space-y-2"
+                  style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px dashed rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <p className="text-sm font-medium" style={{ color: '#94A3B8' }}>No pending debts found.</p>
                 </div>
               )}
             </div>
           </div>
 
-
-          {/* My Receivable Section */}
-          <div className="space-y-8">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-xl font-bold text-[#F8FAFC] flex items-center gap-3">
-                <span className="w-10 h-10 bg-[#22C55E]/10 text-[#22C55E] rounded-xl flex items-center justify-center border border-[#22C55E]/20 shadow-sm font-black">
+          {/* ── My Receivables Section ── */}
+          <div className="space-y-5">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-lg md:text-xl font-bold flex items-center gap-2.5" style={{ color: '#F1F5F9' }}>
+                <span
+                  className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center font-black text-sm"
+                  style={{
+                    background: 'rgba(16,185,129,0.12)',
+                    color: '#10B981',
+                    border: '1px solid rgba(16,185,129,0.25)',
+                  }}
+                >
                   +
                 </span>
                 My Receivables
               </h3>
-              <span className="bg-[#22C55E]/20 text-[#22C55E] text-[13px] font-black px-3 py-1 rounded-full tracking-tighter shadow-sm whitespace-nowrap flex-shrink-0">People owe me</span>
+              <span
+                className="text-xs font-black px-3 py-1 rounded-full whitespace-nowrap"
+                style={{
+                  background: 'rgba(16,185,129,0.10)',
+                  color: '#34D399',
+                  border: '1px solid rgba(16,185,129,0.22)',
+                }}
+              >
+                People owe me
+              </span>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {myReceivables.length > 0 ? (
                 myReceivables.map((contact: IOUContactType) => (
                   <DebtReceivableCard key={contact._id} contact={contact} iouType="receivable" />
                 ))
               ) : (
-                <div className="bg-[#1E293B] border border-[#334155] rounded-[2rem] py-20 px-10 text-center space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-                  <p className="text-[#94A3B8] font-medium">No active receivables found.</p>
+                <div
+                  className="rounded-3xl py-14 px-8 text-center space-y-2"
+                  style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px dashed rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <p className="text-sm font-medium" style={{ color: '#94A3B8' }}>No active receivables found.</p>
                 </div>
               )}
             </div>

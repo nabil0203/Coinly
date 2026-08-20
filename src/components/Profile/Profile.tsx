@@ -23,58 +23,127 @@ export function Profile({ user, paymentMethods }: ProfileProps) {
   const [activeTab, setActiveTab] = useState<'info' | 'account' | 'payment'>('info');
 
   const tabs = [
-    { id: 'info', label: 'Profile Info', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    )},
-    { id: 'account', label: 'Account Settings', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    )},
-    { id: 'payment', label: 'Payment Methods', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-      </svg>
-    )}
+    {
+      id: 'info',
+      label: 'Profile Info',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      )
+    },
+    {
+      id: 'account',
+      label: 'Security & Account',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      )
+    },
+    {
+      id: 'payment',
+      label: 'Payment Methods',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      )
+    }
   ];
 
   return (
-    <div className="h-full overflow-y-auto w-full bg-[#0F172A] text-[#F8FAFC]">
-      <div className="max-w-[1400px] mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 max-h-full">
-        {/* Sidebar Navigation */}
-        <div className="w-full md:w-64 lg:w-72 shrink-0 md:h-[calc(100vh-140px)] flex flex-col gap-2">
-          <div className="bg-[#1E293B] border border-[#334155] rounded-3xl p-3 md:p-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)] md:flex-1 md:overflow-y-auto hidden-scrollbar">
-            <h2 className="hidden md:block px-4 pb-4 mb-2 text-xs font-black text-[#94A3B8] uppercase tracking-widest border-b border-[#334155]">
+    <div className="h-full overflow-y-auto w-full relative" style={{ backgroundColor: '#080E1A' }}>
+      {/* ── Background Ambient Glow Orbs ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div
+          className="absolute -top-[10%] -right-[5%] w-[60%] h-[60%]"
+          style={{
+            borderRadius: '9999px',
+            filter: 'blur(130px)',
+            background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, rgba(8,14,26,0) 70%)',
+            animation: 'glow-breathe 6s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute top-[40%] -left-[10%] w-[55%] h-[55%]"
+          style={{
+            borderRadius: '9999px',
+            filter: 'blur(140px)',
+            background: 'radial-gradient(circle, rgba(139,92,246,0.10) 0%, rgba(8,14,26,0) 70%)',
+            animation: 'glow-breathe 7s ease-in-out infinite 1.5s',
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-[1400px] mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 max-h-full">
+        {/* ── Sidebar Navigation ── */}
+        <div className="w-full md:w-64 lg:w-72 shrink-0 flex flex-col gap-2">
+          <div
+            className="rounded-3xl p-3 md:p-4 md:flex-1 md:overflow-y-auto hidden-scrollbar"
+            style={{
+              background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+              backgroundColor: '#0F1929',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            }}
+          >
+            <h2
+              className="hidden md:block px-4 pb-4 mb-2 text-xs font-black uppercase tracking-widest"
+              style={{ color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            >
               Settings
             </h2>
-            <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as 'info' | 'account' | 'payment')}
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl md:rounded-[1.25rem] transition-all duration-200 font-bold whitespace-nowrap md:whitespace-normal group ${
-                    activeTab === tab.id
-                      ? 'bg-[#6366F1]/15 text-[#6366F1] shadow-sm'
-                      : 'text-[#94A3B8] hover:bg-[#263347] hover:text-[#F8FAFC]'
-                  }`}
-                >
-                  <div className={`transition-transform duration-200 ${activeTab === tab.id ? 'scale-110' : 'group-hover:scale-110'}`}>
-                    {tab.icon}
-                  </div>
-                  {tab.label}
-                </button>
-              ))}
+            <div className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+              {tabs.map(tab => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as 'info' | 'account' | 'payment')}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 font-bold whitespace-nowrap md:whitespace-normal group cursor-pointer text-xs sm:text-sm"
+                    style={{
+                      background: isActive ? 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(139,92,246,0.10))' : 'transparent',
+                      color: isActive ? '#818CF8' : '#94A3B8',
+                      border: isActive ? '1px solid rgba(99,102,241,0.30)' : '1px solid transparent',
+                      boxShadow: isActive ? '0 2px 12px rgba(99,102,241,0.15)' : 'none',
+                    }}
+                    onMouseEnter={e => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+                        (e.currentTarget as HTMLElement).style.color = '#F1F5F9';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        (e.currentTarget as HTMLElement).style.color = '#94A3B8';
+                      }
+                    }}
+                  >
+                    <div className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                      {tab.icon}
+                    </div>
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 md:h-[calc(100vh-140px)] overflow-hidden rounded-3xl bg-transparent md:bg-[#1E293B] md:border border-[#334155] md:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <div className="h-full overflow-y-auto no-scrollbar md:p-8">
-            <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 pb-10 md:pb-0">
+        {/* ── Main Content Area ── */}
+        <div
+          className="flex-1 rounded-3xl overflow-hidden"
+          style={{
+            background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+            backgroundColor: '#0F1929',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+          }}
+        >
+          <div className="h-full overflow-y-auto no-scrollbar p-5 sm:p-7 md:p-8">
+            <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 pb-8 md:pb-0">
               {activeTab === 'info' && (
                 <ProfileInformation
                   user={user}

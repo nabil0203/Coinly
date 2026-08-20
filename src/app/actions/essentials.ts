@@ -17,7 +17,10 @@ export interface MandatoryExpenseItem {
   default_payment_method: string;
   is_active: boolean;
   order: number;
-  paid_on: string | null; // Date string (YYYY-MM-DD) if paid this month, else null
+  paid_amount: number; // Total amount paid this month for this item
+  remaining_amount: number; // Remaining balance to pay (Math.max(0, amount - paid_amount))
+  is_fully_paid: boolean; // True only if paid_amount >= amount
+  paid_on: string | null; // Date string (YYYY-MM-DD) of latest payment if any
   paid_entries: { _id: string; amount: number; payment_method: string; date: string }[];
 }
 
@@ -41,7 +44,7 @@ function getLocalDateStr(): string {
 
 /**
  * Fetch all active mandatory expense items.
- * Derives paid status from the Entry collection for the current month.
+ * Accurately derives paid amount, remaining amount, and fully-paid status from Entry collection for the current month.
  */
 export async function getMandatoryExpenses(): Promise<MandatoryExpenseItem[]> {
   await dbConnect();
@@ -73,8 +76,10 @@ export async function getMandatoryExpenses(): Promise<MandatoryExpenseItem[]> {
     items.map((item) => {
       const key = item.name.trim().toLowerCase();
       const matchingEntries = entryByDescription.get(key) ?? [];
-      const earliestEntry = matchingEntries.length > 0
-        ? matchingEntries.reduce((a, b) => (a.date < b.date ? a : b))
+      const paidAmount = matchingEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      const isFullyPaid = paidAmount >= item.amount;
+      const latestEntry = matchingEntries.length > 0
+        ? matchingEntries.reduce((a, b) => (a.date > b.date ? a : b))
         : null;
 
       return {
@@ -84,7 +89,10 @@ export async function getMandatoryExpenses(): Promise<MandatoryExpenseItem[]> {
         default_payment_method: item.default_payment_method,
         is_active: item.is_active,
         order: item.order,
-        paid_on: earliestEntry ? earliestEntry.date : null,
+        paid_amount: paidAmount,
+        remaining_amount: Math.max(0, item.amount - paidAmount),
+        is_fully_paid: isFullyPaid,
+        paid_on: latestEntry ? latestEntry.date : null,
         paid_entries: matchingEntries.map((e) => ({
           _id: e._id,
           amount: e.amount,
@@ -120,6 +128,9 @@ export async function addMandatoryExpense(data: {
     default_payment_method: created.default_payment_method,
     is_active: created.is_active,
     order: created.order,
+    paid_amount: 0,
+    remaining_amount: created.amount,
+    is_fully_paid: false,
     paid_on: null,
     paid_entries: [],
   };
@@ -166,8 +177,8 @@ const PaymentSplitSchema = z.object({
 });
 
 /**
- * Mark a mandatory expense as paid.
- * Supports partial / split payments across multiple payment methods.
+ * Mark a mandatory expense as paid (full or partial).
+ * Supports split payments across multiple payment methods.
  * Creates one Entry per split, deducting from each respective PaymentMethod balance.
  */
 export async function payMandatoryExpense(

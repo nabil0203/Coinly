@@ -275,13 +275,13 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
 
 
       <div className="flex-1 overflow-hidden relative">
-        <LedgerTable 
-          rows={rows} 
-          allMethods={allMethods} 
-          monthName={monthName} 
-          isScrolled={isScrolled} 
-          handleScroll={handleScroll} 
-          openModal={openModal} 
+        <LedgerTable
+          rows={rows}
+          allMethods={allMethods}
+          monthName={monthName}
+          isScrolled={isScrolled}
+          handleScroll={handleScroll}
+          openModal={openModal}
         />
       </div>
 
@@ -329,9 +329,9 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
       </div>
 
 
-      <EntryForm 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
+      <EntryForm
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
         onSubmit={handleEntrySubmit}
         onDelete={handleEntryDelete}
         type={modalType}

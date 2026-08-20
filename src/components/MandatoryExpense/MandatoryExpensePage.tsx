@@ -52,10 +52,10 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
   const [payItem, setPayItem] = useState<MandatoryExpenseItem | null>(null);
 
   const handleAdd = async (name: string, amount: string) => {
-    const newItem = await addMandatoryExpense({ 
-      name: name.trim(), 
+    const newItem = await addMandatoryExpense({
+      name: name.trim(),
       amount: parseInt(amount, 10),
-      default_payment_method: defaultMethod || 'Cash' 
+      default_payment_method: defaultMethod || 'Cash'
     });
     setItems(prev => [...prev, newItem]);
     setShowAdd(false);
@@ -72,8 +72,21 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
     if (!editId || !editName.trim() || !editAmount) return;
     setSavingEdit(true);
     try {
-      await updateMandatoryExpense(editId, { name: editName.trim(), amount: parseInt(editAmount, 10) });
-      setItems(prev => prev.map(i => i._id === editId ? { ...i, name: editName.trim(), amount: parseInt(editAmount, 10) } : i));
+      const parsedAmt = parseInt(editAmount, 10);
+      await updateMandatoryExpense(editId, { name: editName.trim(), amount: parsedAmt });
+      setItems(prev => prev.map(i => {
+        if (i._id === editId) {
+          const remaining = Math.max(0, parsedAmt - (i.paid_amount || 0));
+          return {
+            ...i,
+            name: editName.trim(),
+            amount: parsedAmt,
+            remaining_amount: remaining,
+            is_fully_paid: (i.paid_amount || 0) >= parsedAmt,
+          };
+        }
+        return i;
+      }));
       setEditId(null);
       router.refresh();
     } catch (e: unknown) { alert((e as Error).message); }
@@ -83,11 +96,11 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
   const handleDelete = async (id: string) => {
     if (!confirm('Remove this mandatory expense?')) return;
     setDeletingId(id);
-    try { 
-      await deleteMandatoryExpense(id); 
+    try {
+      await deleteMandatoryExpense(id);
       setItems(prev => prev.filter(i => i._id !== id));
       setActiveDropdown(null);
-      router.refresh(); 
+      router.refresh();
     }
     catch (e: unknown) { alert((e as Error).message); }
     finally { setDeletingId(null); }
@@ -95,56 +108,182 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
 
   const confirmPay = async (item: MandatoryExpenseItem, validSplits: PaySplit[], payDate: string) => {
     try {
+      const newlyPaid = validSplits.reduce((s, p) => s + (parseInt(p.amount, 10) || 0), 0);
       await payMandatoryExpense(
         item._id,
         validSplits.map(s => ({ payment_method: s.payment_method, amount: parseInt(s.amount, 10) })),
         payDate
       );
-      setItems(prev => prev.map(i => i._id === item._id ? { ...i, paid_on: payDate } : i));
-      setPayItem(null); 
+      setItems(prev => prev.map(i => {
+        if (i._id === item._id) {
+          const totalPaidNow = (i.paid_amount || 0) + newlyPaid;
+          const isFully = totalPaidNow >= i.amount;
+          return {
+            ...i,
+            paid_amount: totalPaidNow,
+            remaining_amount: Math.max(0, i.amount - totalPaidNow),
+            is_fully_paid: isFully,
+            paid_on: payDate,
+          };
+        }
+        return i;
+      }));
+      setPayItem(null);
       router.refresh();
     } catch (e: unknown) { alert((e as Error).message); }
   };
 
-  return (
-    <div className="min-h-screen bg-[#0F172A] p-4 sm:p-6 md:p-8 font-sans selection:bg-[#F59E0B]/30 selection:text-[#F59E0B]">
-      <div className="max-w-4xl mx-auto">
+  const totalMonthly = items.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
+  const totalPaid = items.reduce((acc, item) => acc + (Number(item.paid_amount) || 0), 0);
+  const totalRemaining = Math.max(0, totalMonthly - totalPaid);
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sm:mb-12"
-          style={{ animation: 'fade-in-down 0.5s ease-out both' }}>
+  return (
+    <div className="h-full overflow-y-auto w-full relative" style={{ backgroundColor: '#080E1A' }}>
+      {/* ── Background Ambient Glow Orbs ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div
+          className="absolute -top-[10%] -right-[5%] w-[60%] h-[60%]"
+          style={{
+            borderRadius: '9999px',
+            filter: 'blur(130px)',
+            background: 'radial-gradient(circle, rgba(245,158,11,0.10) 0%, rgba(8,14,26,0) 70%)',
+            animation: 'glow-breathe 6s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute top-[40%] -left-[10%] w-[55%] h-[55%]"
+          style={{
+            borderRadius: '9999px',
+            filter: 'blur(140px)',
+            background: 'radial-gradient(circle, rgba(99,102,241,0.10) 0%, rgba(8,14,26,0) 70%)',
+            animation: 'glow-breathe 7s ease-in-out infinite 1.5s',
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 max-w-4xl mx-auto py-6 md:py-10 px-4 md:px-8 space-y-6 md:space-y-8">
+
+        {/* ── Header ── */}
+        <div
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          style={{ animation: 'slide-in-up 0.4s ease-out both' }}
+        >
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <Link href="/" className="p-2 -ml-2 text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#1E293B] rounded-xl transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <Link
+                href="/"
+                className="p-2 -ml-2 rounded-xl transition-all"
+                style={{ color: '#94A3B8' }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.color = '#F1F5F9';
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.color = '#94A3B8';
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                }}
+                title="Back to Dashboard"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
               </Link>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#F8FAFC] tracking-tight">Mandatory Expenses</h1>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: '#F1F5F9' }}>
+                Mandatory <span style={{ color: '#F59E0B' }}>Expenses</span>
+              </h1>
             </div>
-            <p className="text-[#94A3B8] text-sm ml-11">Manage your fixed monthly bills and subscriptions.</p>
+            <p className="text-xs sm:text-sm ml-10" style={{ color: '#94A3B8' }}>
+              Manage your fixed monthly bills, subscriptions, and recurring costs.
+            </p>
           </div>
-          <button onClick={() => setShowAdd(true)}
-            className="group px-6 py-3 bg-[#F59E0B] text-[#0F172A] text-sm font-bold rounded-2xl hover:bg-[#FBBF24] hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 transition-transform group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+
+          <button
+            onClick={() => setShowAdd(true)}
+            className="group px-5 py-3 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] cursor-pointer shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+              color: '#080E1A',
+              boxShadow: '0 4px 20px rgba(245,158,11,0.25)',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(245,158,11,0.40)';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(245,158,11,0.25)';
+              (e.currentTarget as HTMLElement).style.transform = '';
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             Add New Expense
           </button>
         </div>
 
-        {/* Items List */}
-        <div className="space-y-3">
+        {/* ── Summary Cards ── */}
+        {items.length > 0 && (
+          <div className="grid grid-cols-3 gap-3 md:gap-4" style={{ animation: 'slide-in-up 0.4s ease-out both', animationDelay: '60ms' }}>
+            <div
+              className="rounded-2xl p-3.5 sm:p-4 text-center sm:text-left"
+              style={{
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+                backgroundColor: '#0F1929',
+                border: '1px solid rgba(255,255,255,0.07)',
+              }}
+            >
+              <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-1" style={{ color: '#94A3B8' }}>Total Monthly</p>
+              <p className="text-base sm:text-xl font-black tabular-nums" style={{ color: '#F1F5F9' }}>৳ {totalMonthly.toLocaleString()}</p>
+            </div>
+            <div
+              className="rounded-2xl p-3.5 sm:p-4 text-center sm:text-left"
+              style={{
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+                backgroundColor: '#0F1929',
+                border: '1px solid rgba(16,185,129,0.20)',
+              }}
+            >
+              <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-1" style={{ color: '#34D399' }}>Paid</p>
+              <p className="text-base sm:text-xl font-black tabular-nums" style={{ color: '#10B981' }}>৳ {totalPaid.toLocaleString()}</p>
+            </div>
+            <div
+              className="rounded-2xl p-3.5 sm:p-4 text-center sm:text-left"
+              style={{
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+                backgroundColor: '#0F1929',
+                border: '1px solid rgba(245,158,11,0.20)',
+              }}
+            >
+              <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-1" style={{ color: '#FBBF24' }}>Remaining</p>
+              <p className="text-base sm:text-xl font-black tabular-nums" style={{ color: '#F59E0B' }}>৳ {totalRemaining.toLocaleString()}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Items List ── */}
+        <div className="space-y-3" style={{ animation: 'slide-in-up 0.4s ease-out both', animationDelay: '120ms' }}>
           {items.length === 0 && !showAdd && (
-            <div className="py-16 text-center bg-[#1E293B] border border-dashed border-[#334155] rounded-2xl"
-              style={{ animation: 'slide-in-up 0.5s ease-out both', animationDelay: '100ms' }}>
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#F59E0B]/10 border border-[#F59E0B]/20 flex items-center justify-center text-[#F59E0B]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div
+              className="py-16 text-center rounded-3xl space-y-3"
+              style={{
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px dashed rgba(255,255,255,0.08)',
+              }}
+            >
+              <div
+                className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center"
+                style={{
+                  background: 'rgba(245,158,11,0.10)',
+                  border: '1px solid rgba(245,158,11,0.20)',
+                  color: '#F59E0B',
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </div>
-              <p className="text-[#94A3B8] font-medium">No mandatory expenses yet.</p>
-              <p className="text-[#475569] text-sm mt-1">Add your recurring monthly bills to track them.</p>
+              <p className="text-base font-bold" style={{ color: '#F1F5F9' }}>No mandatory expenses yet.</p>
+              <p className="text-xs" style={{ color: '#94A3B8' }}>Add your recurring monthly bills to track them effortlessly.</p>
             </div>
           )}
 
