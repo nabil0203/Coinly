@@ -76,13 +76,15 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
       await updateMandatoryExpense(editId, { name: editName.trim(), amount: parsedAmt });
       setItems(prev => prev.map(i => {
         if (i._id === editId) {
-          const remaining = Math.max(0, parsedAmt - (i.paid_amount || 0));
+          const newTotalDue = parsedAmt + (i.arrears || 0);
+          const remaining = Math.max(0, newTotalDue - (i.paid_amount || 0));
           return {
             ...i,
             name: editName.trim(),
             amount: parsedAmt,
+            total_due: newTotalDue,
             remaining_amount: remaining,
-            is_fully_paid: (i.paid_amount || 0) >= parsedAmt,
+            is_fully_paid: (i.paid_amount || 0) >= newTotalDue,
           };
         }
         return i;
@@ -117,11 +119,12 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
       setItems(prev => prev.map(i => {
         if (i._id === item._id) {
           const totalPaidNow = (i.paid_amount || 0) + newlyPaid;
-          const isFully = totalPaidNow >= i.amount;
+          const targetDue = i.total_due || i.amount;
+          const isFully = totalPaidNow >= targetDue;
           return {
             ...i,
             paid_amount: totalPaidNow,
-            remaining_amount: Math.max(0, i.amount - totalPaidNow),
+            remaining_amount: Math.max(0, targetDue - totalPaidNow),
             is_fully_paid: isFully,
             paid_on: payDate,
           };
@@ -133,9 +136,10 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
     } catch (e: unknown) { alert((e as Error).message); }
   };
 
-  const totalMonthly = items.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
+  const totalMonthlyDue = items.reduce((acc, item) => acc + (Number(item.total_due ?? item.amount) || 0), 0);
   const totalPaid = items.reduce((acc, item) => acc + (Number(item.paid_amount) || 0), 0);
-  const totalRemaining = Math.max(0, totalMonthly - totalPaid);
+  const totalRemaining = Math.max(0, totalMonthlyDue - totalPaid);
+  const totalArrears = items.reduce((acc, item) => acc + (Number(item.arrears) || 0), 0);
 
   return (
     <div className="h-full overflow-y-auto w-full relative" style={{ backgroundColor: '#080E1A' }}>
@@ -193,7 +197,7 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
               </h1>
             </div>
             <p className="text-xs sm:text-sm ml-10" style={{ color: '#94A3B8' }}>
-              Manage your fixed monthly bills, subscriptions, and recurring costs.
+              Manage your recurring monthly bills with automatic carryover for unpaid balances.
             </p>
           </div>
 
@@ -232,8 +236,15 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
                 border: '1px solid rgba(255,255,255,0.07)',
               }}
             >
-              <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-1" style={{ color: '#94A3B8' }}>Total Monthly</p>
-              <p className="text-base sm:text-xl font-black tabular-nums" style={{ color: '#F1F5F9' }}>৳ {totalMonthly.toLocaleString()}</p>
+              <div className="flex items-center gap-1.5 justify-center sm:justify-start mb-1">
+                <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest" style={{ color: '#94A3B8' }}>Total Due</p>
+                {totalArrears > 0 && (
+                  <span className="text-[8px] font-extrabold px-1 rounded bg-[#F59E0B]/15 text-[#F59E0B]">
+                    +৳{totalArrears.toLocaleString()} past
+                  </span>
+                )}
+              </div>
+              <p className="text-base sm:text-xl font-black tabular-nums" style={{ color: '#F1F5F9' }}>৳ {totalMonthlyDue.toLocaleString()}</p>
             </div>
             <div
               className="rounded-2xl p-3.5 sm:p-4 text-center sm:text-left"
@@ -243,7 +254,7 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
                 border: '1px solid rgba(16,185,129,0.20)',
               }}
             >
-              <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-1" style={{ color: '#34D399' }}>Paid</p>
+              <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-1" style={{ color: '#34D399' }}>Paid This Month</p>
               <p className="text-base sm:text-xl font-black tabular-nums" style={{ color: '#10B981' }}>৳ {totalPaid.toLocaleString()}</p>
             </div>
             <div
@@ -254,7 +265,7 @@ export function MandatoryExpensePage({ initialItems, paymentMethods }: Props) {
                 border: '1px solid rgba(245,158,11,0.20)',
               }}
             >
-              <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-1" style={{ color: '#FBBF24' }}>Remaining</p>
+              <p className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest mb-1" style={{ color: '#FBBF24' }}>Remaining Due</p>
               <p className="text-base sm:text-xl font-black tabular-nums" style={{ color: '#F59E0B' }}>৳ {totalRemaining.toLocaleString()}</p>
             </div>
           </div>

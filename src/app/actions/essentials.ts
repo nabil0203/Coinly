@@ -13,25 +13,17 @@ import { z } from 'zod';
 export interface MandatoryExpenseItem {
   _id: string;
   name: string;
-  amount: number;
+  amount: number; // Base monthly recurring amount (e.g. 500)
   default_payment_method: string;
   is_active: boolean;
   order: number;
-  paid_amount: number; // Total amount paid this month for this item
-  remaining_amount: number; // Remaining balance to pay (Math.max(0, amount - paid_amount))
-  is_fully_paid: boolean; // True only if paid_amount >= amount
-  paid_on: string | null; // Date string (YYYY-MM-DD) of latest payment if any
+  arrears: number; // Unpaid balance carried over from previous active months
+  total_due: number; // Total due this month = base amount + arrears (e.g. 500 + 150 = 650)
+  paid_amount: number; // Actual amount paid in the current month
+  remaining_amount: number; // Remaining balance to pay this month: Math.max(0, total_due - paid_amount)
+  is_fully_paid: boolean; // True only if paid_amount >= total_due
+  paid_on: string | null; // Date string (YYYY-MM-DD) of latest payment in the current month if any
   paid_entries: { _id: string; amount: number; payment_method: string; date: string }[];
-}
-
-function getCurrentMonthRange() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  return {
-    start: `${year}-${month}-01`,
-    end: `${year}-${month}-31`,
-  };
 }
 
 function getLocalDateStr(): string {
@@ -43,43 +35,95 @@ function getLocalDateStr(): string {
 }
 
 /**
- * Fetch all active mandatory expense items.
- * Accurately derives paid amount, remaining amount, and fully-paid status from Entry collection for the current month.
+ * Fetch all active mandatory expense items with automatic month-over-month rollover (arrears).
+ * If a bill was unpaid or partially paid in past months, the remaining balance carries over into total_due.
  */
 export async function getMandatoryExpenses(): Promise<MandatoryExpenseItem[]> {
   await dbConnect();
   const user = await getCurrentUser();
   if (!user) return [];
 
-  const { start, end } = getCurrentMonthRange();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonthNum = now.getMonth() + 1; // 1 to 12
+  const currentMonthPrefix = `${currentYear}-${String(currentMonthNum).padStart(2, '0')}`;
+  const currentMonthStart = `${currentMonthPrefix}-01`;
+  const currentMonthEnd = `${currentMonthPrefix}-31`;
 
-  const [items, thisMonthEntries] = await Promise.all([
+  // Fetch all active items and all expense entries for this user
+  const [items, allEntries] = await Promise.all([
     MandatoryExpense.find({ is_active: true }).sort({ order: 1, createdAt: 1 }).lean(),
     Entry.find({
       user: user.userId,
       type: 'expense',
-      date: { $gte: start, $lte: end },
     }).lean(),
   ]);
 
-  // Build a lookup: description -> matching entries this month
-  const entryByDescription = new Map<string, typeof thisMonthEntries>();
-  for (const entry of thisMonthEntries) {
+  // Group all entries by description lowercase
+  const entriesByDesc = new Map<string, typeof allEntries>();
+  for (const entry of allEntries) {
     const key = entry.description?.trim().toLowerCase() ?? '';
-    if (!entryByDescription.has(key)) {
-      entryByDescription.set(key, []);
+    if (!entriesByDesc.has(key)) {
+      entriesByDesc.set(key, []);
     }
-    entryByDescription.get(key)!.push(entry);
+    entriesByDesc.get(key)!.push(entry);
   }
 
   return JSON.parse(JSON.stringify(
     items.map((item) => {
       const key = item.name.trim().toLowerCase();
-      const matchingEntries = entryByDescription.get(key) ?? [];
-      const paidAmount = matchingEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-      const isFullyPaid = paidAmount >= item.amount;
-      const latestEntry = matchingEntries.length > 0
-        ? matchingEntries.reduce((a, b) => (a.date > b.date ? a : b))
+      const matchedEntries = entriesByDesc.get(key) ?? [];
+
+      // Determine creation month
+      const createdDate = item.createdAt ? new Date(item.createdAt) : now;
+      let startYear = createdDate.getFullYear();
+      let startMonth = createdDate.getMonth() + 1;
+
+      // Boundary check so start is never in the future
+      if (startYear > currentYear || (startYear === currentYear && startMonth > currentMonthNum)) {
+        startYear = currentYear;
+        startMonth = currentMonthNum;
+      }
+
+      // Compute arrears from past active months
+      let pastMonthsCount = 0;
+      let totalPastPaid = 0;
+
+      let curY = startYear;
+      let curM = startMonth;
+
+      while (curY < currentYear || (curY === currentYear && curM < currentMonthNum)) {
+        pastMonthsCount++;
+        const monthPrefix = `${curY}-${String(curM).padStart(2, '0')}`;
+
+        const monthPaid = matchedEntries
+          .filter(e => typeof e.date === 'string' && e.date.startsWith(monthPrefix))
+          .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+        totalPastPaid += monthPaid;
+
+        curM++;
+        if (curM > 12) {
+          curM = 1;
+          curY++;
+        }
+      }
+
+      const totalPastExpected = pastMonthsCount * item.amount;
+      const arrears = Math.max(0, totalPastExpected - totalPastPaid);
+
+      // Current month calculations
+      const currentMonthEntries = matchedEntries.filter(
+        e => typeof e.date === 'string' && e.date >= currentMonthStart && e.date <= currentMonthEnd
+      );
+      const paidThisMonth = currentMonthEntries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+      const totalDue = item.amount + arrears;
+      const remainingDue = Math.max(0, totalDue - paidThisMonth);
+      const isFullyPaid = totalDue > 0 ? paidThisMonth >= totalDue : true;
+
+      const latestEntry = currentMonthEntries.length > 0
+        ? currentMonthEntries.reduce((a, b) => (a.date > b.date ? a : b))
         : null;
 
       return {
@@ -89,11 +133,13 @@ export async function getMandatoryExpenses(): Promise<MandatoryExpenseItem[]> {
         default_payment_method: item.default_payment_method,
         is_active: item.is_active,
         order: item.order,
-        paid_amount: paidAmount,
-        remaining_amount: Math.max(0, item.amount - paidAmount),
+        arrears: arrears,
+        total_due: totalDue,
+        paid_amount: paidThisMonth,
+        remaining_amount: remainingDue,
         is_fully_paid: isFullyPaid,
         paid_on: latestEntry ? latestEntry.date : null,
-        paid_entries: matchingEntries.map((e) => ({
+        paid_entries: currentMonthEntries.map((e) => ({
           _id: e._id,
           amount: e.amount,
           payment_method: e.payment_method,
@@ -128,6 +174,8 @@ export async function addMandatoryExpense(data: {
     default_payment_method: created.default_payment_method,
     is_active: created.is_active,
     order: created.order,
+    arrears: 0,
+    total_due: created.amount,
     paid_amount: 0,
     remaining_amount: created.amount,
     is_fully_paid: false,
@@ -177,7 +225,7 @@ const PaymentSplitSchema = z.object({
 });
 
 /**
- * Mark a mandatory expense as paid (full or partial).
+ * Mark a mandatory expense as paid (full, partial, or arrears payoff).
  * Supports split payments across multiple payment methods.
  * Creates one Entry per split, deducting from each respective PaymentMethod balance.
  */

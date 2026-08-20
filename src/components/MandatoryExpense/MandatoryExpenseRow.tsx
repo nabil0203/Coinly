@@ -42,10 +42,12 @@ export function MandatoryExpenseRow({
   onToggleDropdown,
 }: MandatoryExpenseRowProps) {
   const isFullyPaid = !!item.is_fully_paid;
-  const isPartial = !isFullyPaid && (item.paid_amount || 0) > 0;
+  const targetDue = item.total_due !== undefined ? item.total_due : item.amount;
+  const arrears = item.arrears || 0;
   const paidAmt = item.paid_amount || 0;
-  const remainingAmt = item.remaining_amount !== undefined ? item.remaining_amount : Math.max(0, item.amount - paidAmt);
-  const percentPaid = Math.min(100, Math.round((paidAmt / item.amount) * 100));
+  const remainingAmt = item.remaining_amount !== undefined ? item.remaining_amount : Math.max(0, targetDue - paidAmt);
+  const isPartial = !isFullyPaid && paidAmt > 0;
+  const percentPaid = targetDue > 0 ? Math.min(100, Math.round((paidAmt / targetDue) * 100)) : 100;
 
   return (
     <div
@@ -89,7 +91,7 @@ export function MandatoryExpenseRow({
               }}
               onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = '#F59E0B'; }}
               onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
-              placeholder="Amount"
+              placeholder="Monthly Base Amount"
             />
           </div>
           <div className="flex gap-2 justify-end">
@@ -132,40 +134,59 @@ export function MandatoryExpenseRow({
           
           {/* Details Box */}
           <div
-            className="flex-1 min-w-0 rounded-2xl p-3.5 sm:p-4 flex flex-row sm:grid sm:grid-cols-[1fr_130px_110px] items-center gap-3 sm:gap-6 transition-all duration-200"
+            className="flex-1 min-w-0 rounded-2xl p-3.5 sm:p-4 flex flex-row sm:grid sm:grid-cols-[1fr_140px_110px] items-center gap-3 sm:gap-6 transition-all duration-200"
             style={{
               background: 'linear-gradient(160deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%)',
               backgroundColor: '#0F1929',
               border: isFullyPaid
                 ? '1px solid rgba(16,185,129,0.20)'
                 : isPartial
-                  ? '1px solid rgba(245,158,11,0.25)'
-                  : '1px solid rgba(255,255,255,0.07)',
+                  ? '1px solid rgba(245,158,11,0.30)'
+                  : arrears > 0
+                    ? '1px solid rgba(245,158,11,0.20)'
+                    : '1px solid rgba(255,255,255,0.07)',
             }}
             onMouseEnter={e => {
-              if (!isFullyPaid) (e.currentTarget as HTMLElement).style.borderColor = 'rgba(245,158,11,0.35)';
+              if (!isFullyPaid) (e.currentTarget as HTMLElement).style.borderColor = 'rgba(245,158,11,0.40)';
             }}
             onMouseLeave={e => {
-              if (!isFullyPaid) (e.currentTarget as HTMLElement).style.borderColor = isPartial ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.07)';
+              if (!isFullyPaid) (e.currentTarget as HTMLElement).style.borderColor = isPartial ? 'rgba(245,158,11,0.30)' : (arrears > 0 ? 'rgba(245,158,11,0.20)' : 'rgba(255,255,255,0.07)');
             }}
           >
-            {/* 1. Name & Status & Progress */}
+            {/* 1. Name, Arrears Badge & Progress */}
             <div className="flex-1 sm:flex-none flex items-center gap-3 min-w-0">
               <div
                 className="hidden sm:block w-2 h-2 rounded-full shrink-0"
                 style={{
-                  backgroundColor: isFullyPaid ? '#10B981' : isPartial ? '#FBBF24' : '#F59E0B',
-                  boxShadow: isFullyPaid ? '0 0 8px #10B981' : isPartial ? '0 0 8px #FBBF24' : '0 0 8px #F59E0B',
+                  backgroundColor: isFullyPaid ? '#10B981' : isPartial ? '#FBBF24' : arrears > 0 ? '#F59E0B' : '#6366F1',
+                  boxShadow: isFullyPaid ? '0 0 8px #10B981' : isPartial ? '0 0 8px #FBBF24' : arrears > 0 ? '0 0 8px #F59E0B' : '0 0 8px #6366F1',
                 }}
               />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p
                     className="font-bold text-sm sm:text-base truncate transition-colors"
                     style={{ color: isFullyPaid ? '#64748B' : '#F1F5F9', textDecoration: isFullyPaid ? 'line-through' : 'none' }}
                   >
                     {item.name}
                   </p>
+
+                  {/* Arrears Indicator Badge */}
+                  {arrears > 0 && !isFullyPaid && (
+                    <span
+                      className="text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0 whitespace-nowrap"
+                      style={{
+                        background: 'rgba(245,158,11,0.14)',
+                        color: '#FBBF24',
+                        border: '1px solid rgba(245,158,11,0.30)',
+                      }}
+                      title={`Base monthly: ৳${item.amount} + Past due: ৳${arrears}`}
+                    >
+                      +৳{arrears.toLocaleString()} past due
+                    </span>
+                  )}
+
+                  {/* Partial percentage badge */}
                   {isPartial && (
                     <span
                       className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md shrink-0"
@@ -182,25 +203,35 @@ export function MandatoryExpenseRow({
 
                 {isFullyPaid && item.paid_on && (
                   <p className="text-[10px] font-bold mt-0.5" style={{ color: '#10B981' }}>
-                    Paid in full on {formatDate(item.paid_on)}
+                    Paid in full (৳{targetDue.toLocaleString()}) on {formatDate(item.paid_on)}
                   </p>
                 )}
 
-                {isPartial && (
+                {!isFullyPaid && (
                   <div className="mt-1 space-y-1">
                     <p className="text-[10px] font-semibold" style={{ color: '#94A3B8' }}>
-                      Paid: <span className="font-bold text-[#10B981]">৳{paidAmt.toLocaleString()}</span> • Due: <span className="font-bold text-[#F59E0B]">৳{remainingAmt.toLocaleString()}</span>
+                      {arrears > 0 ? (
+                        <>Monthly ৳{item.amount.toLocaleString()} + Past ৳{arrears.toLocaleString()}</>
+                      ) : (
+                        <>Monthly ৳{item.amount.toLocaleString()}</>
+                      )}
+                      {paidAmt > 0 && (
+                        <> • Paid: <span className="font-bold text-[#10B981]">৳{paidAmt.toLocaleString()}</span></>
+                      )}
+                      <> • Due: <span className="font-bold text-[#F59E0B]">৳{remainingAmt.toLocaleString()}</span></>
                     </p>
-                    {/* Mini progress bar */}
-                    <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{
-                          width: `${percentPaid}%`,
-                          background: 'linear-gradient(90deg, #F59E0B, #10B981)',
-                        }}
-                      />
-                    </div>
+                    {/* Mini progress bar if partial */}
+                    {isPartial && (
+                      <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${percentPaid}%`,
+                            background: 'linear-gradient(90deg, #F59E0B, #10B981)',
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -213,7 +244,7 @@ export function MandatoryExpenseRow({
                 style={{ color: isFullyPaid ? '#64748B' : '#F1F5F9' }}
               >
                 <span className="text-[10px] font-bold mr-0.5" style={{ color: '#94A3B8' }}>৳</span>
-                {item.amount.toLocaleString()}
+                {targetDue.toLocaleString()}
               </p>
               <p className="text-[10px] font-medium" style={{ color: isFullyPaid ? '#475569' : '#94A3B8' }}>
                 {new Date().toLocaleString('en-US', { month: 'short' })} {new Date().getFullYear()}
@@ -221,14 +252,19 @@ export function MandatoryExpenseRow({
             </div>
 
             {/* 2. Amount (Desktop) */}
-            <div className="hidden sm:flex justify-end items-center">
+            <div className="hidden sm:flex flex-col justify-center items-end">
               <p
                 className="text-base font-bold tabular-nums tracking-tight"
                 style={{ color: isFullyPaid ? '#64748B' : '#F1F5F9' }}
               >
                 <span className="text-xs font-bold mr-1" style={{ color: '#94A3B8' }}>৳</span>
-                {item.amount.toLocaleString()}
+                {targetDue.toLocaleString()}
               </p>
+              {arrears > 0 && !isFullyPaid && (
+                <span className="text-[9px] font-semibold text-[#94A3B8]">
+                  (৳{item.amount} + ৳{arrears})
+                </span>
+              )}
             </div>
 
             {/* 3. Date (Desktop) */}
@@ -271,11 +307,12 @@ export function MandatoryExpenseRow({
             ) : (
               <button
                 onClick={() => onOpenPayDialog(item)}
-                className="px-3 py-2 sm:px-6 sm:py-2.5 text-[10px] sm:text-xs font-extrabold rounded-xl transition-all whitespace-nowrap active:scale-95 cursor-pointer"
+                className="px-3 py-2 sm:px-5 sm:py-2.5 text-[10px] sm:text-xs font-extrabold rounded-xl transition-all whitespace-nowrap active:scale-95 cursor-pointer"
                 style={{
-                  background: 'rgba(245,158,11,0.12)',
-                  color: '#FBBF24',
-                  border: '1px solid rgba(245,158,11,0.25)',
+                  background: arrears > 0 ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : 'rgba(245,158,11,0.12)',
+                  color: arrears > 0 ? '#080E1A' : '#FBBF24',
+                  border: arrears > 0 ? 'none' : '1px solid rgba(245,158,11,0.25)',
+                  boxShadow: arrears > 0 ? '0 2px 12px rgba(245,158,11,0.25)' : 'none',
                 }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, #F59E0B, #D97706)';
@@ -283,12 +320,14 @@ export function MandatoryExpenseRow({
                   (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(245,158,11,0.30)';
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(245,158,11,0.12)';
-                  (e.currentTarget as HTMLElement).style.color = '#FBBF24';
-                  (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  if (arrears === 0) {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(245,158,11,0.12)';
+                    (e.currentTarget as HTMLElement).style.color = '#FBBF24';
+                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  }
                 }}
               >
-                Mark Paid
+                {arrears > 0 ? `Pay ৳${targetDue.toLocaleString()}` : 'Mark Paid'}
               </button>
             )}
 

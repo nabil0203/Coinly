@@ -34,15 +34,17 @@ export function MandatoryExpensePayDialog({
   const [payDate, setPayDate] = useState(getLocalDateStr());
   const [payLoading, setPayLoading] = useState(false);
 
-  const defaultAmtToPay = payItem
-    ? (payItem.remaining_amount !== undefined && payItem.remaining_amount > 0 ? payItem.remaining_amount : payItem.amount)
+  const targetAmt = payItem
+    ? (payItem.remaining_amount !== undefined && payItem.remaining_amount > 0
+        ? payItem.remaining_amount
+        : (payItem.total_due ?? payItem.amount))
     : 0;
 
   useEffect(() => {
     if (payItem) {
       const initialAmt = payItem.remaining_amount !== undefined && payItem.remaining_amount > 0
         ? payItem.remaining_amount
-        : payItem.amount;
+        : (payItem.total_due ?? payItem.amount);
       setPaySplits([{ payment_method: payItem.default_payment_method || defaultMethod, amount: String(initialAmt) }]);
       setPayDate(getLocalDateStr());
     }
@@ -63,7 +65,8 @@ export function MandatoryExpensePayDialog({
   };
 
   const splitTotal = paySplits.reduce((s, p) => s + (parseInt(p.amount, 10) || 0), 0);
-  const targetAmount = defaultAmtToPay;
+  const arrears = payItem.arrears || 0;
+  const isPartial = (payItem.paid_amount || 0) > 0 && !payItem.is_fully_paid;
 
   const handleConfirmPay = async () => {
     const validSplits = paySplits.filter(s => s.payment_method && parseInt(s.amount, 10) > 0);
@@ -73,8 +76,6 @@ export function MandatoryExpensePayDialog({
     await onConfirmPay(payItem, validSplits, payDate);
     setPayLoading(false);
   };
-
-  const isPartial = (payItem.paid_amount || 0) > 0 && !payItem.is_fully_paid;
 
   return (
     <div
@@ -118,7 +119,7 @@ export function MandatoryExpensePayDialog({
               </svg>
             </div>
             <h3 className="text-lg font-black" style={{ color: '#F1F5F9' }}>
-              {isPartial ? 'Pay Remaining Balance' : 'Confirm Payment'}
+              {isPartial ? 'Pay Remaining Balance' : (arrears > 0 ? 'Pay Total Due' : 'Confirm Payment')}
             </h3>
           </div>
           <button
@@ -140,20 +141,39 @@ export function MandatoryExpensePayDialog({
           </button>
         </div>
 
-        <div className="text-xs font-semibold mb-5 ml-0.5" style={{ color: '#94A3B8' }}>
-          {isPartial ? (
-            <p>
-              Paying remainder for <span className="font-bold" style={{ color: '#FBBF24' }}>{payItem.name}</span>
-              <br />
-              <span className="text-[11px]" style={{ color: '#CBD5E1' }}>
-                Total: ৳{payItem.amount.toLocaleString()} • Paid: ৳{(payItem.paid_amount || 0).toLocaleString()} • Remaining: ৳{(payItem.remaining_amount || 0).toLocaleString()}
-              </span>
-            </p>
-          ) : (
-            <p>
-              Mark <span className="font-bold" style={{ color: '#FBBF24' }}>{payItem.name}</span> as paid? (Total: ৳{payItem.amount.toLocaleString()})
-            </p>
-          )}
+        {/* Bill Details & Breakdown */}
+        <div
+          className="p-3.5 rounded-2xl mb-4 space-y-1"
+          style={{
+            background: 'rgba(255,255,255,0.025)',
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold" style={{ color: '#F1F5F9' }}>{payItem.name}</span>
+            <span className="text-xs font-black text-[#F59E0B]">
+              Due: ৳{(payItem.remaining_amount ?? (payItem.total_due || payItem.amount)).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="text-[11px] space-y-0.5" style={{ color: '#94A3B8' }}>
+            <div className="flex justify-between">
+              <span>Monthly Recurring:</span>
+              <span className="font-semibold text-[#F1F5F9]">৳{payItem.amount.toLocaleString()}</span>
+            </div>
+            {arrears > 0 && (
+              <div className="flex justify-between text-[#FBBF24]">
+                <span>Past Due (Arrears):</span>
+                <span className="font-bold">+৳{arrears.toLocaleString()}</span>
+              </div>
+            )}
+            {isPartial && (
+              <div className="flex justify-between text-[#10B981]">
+                <span>Paid This Month:</span>
+                <span className="font-semibold">-৳{(payItem.paid_amount || 0).toLocaleString()}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Date picker */}
@@ -279,12 +299,12 @@ export function MandatoryExpensePayDialog({
           <span className="text-xs font-extrabold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Total Amount</span>
           <span
             className="text-sm font-black tabular-nums"
-            style={{ color: splitTotal !== targetAmount ? '#F43F5E' : '#10B981' }}
+            style={{ color: splitTotal !== targetAmt ? '#F43F5E' : '#10B981' }}
           >
             ৳ {splitTotal.toLocaleString()}
-            {splitTotal !== targetAmount && (
+            {splitTotal !== targetAmt && (
               <span className="text-[10px] ml-2 font-bold" style={{ color: '#94A3B8' }}>
-                (Remaining: ৳ {targetAmount.toLocaleString()})
+                (Due: ৳ {targetAmt.toLocaleString()})
               </span>
             )}
           </span>
