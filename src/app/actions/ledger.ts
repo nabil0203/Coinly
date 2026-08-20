@@ -5,21 +5,10 @@ import dbConnect from '@/lib/db';
 import Entry from '@/models/Entry';
 import PaymentMethod from '@/models/PaymentMethod';
 import IOUContact from '@/models/IOUContact';
-import IOUTransaction from '@/models/IOUTransaction';
 import { getCurrentUser } from '@/lib/auth';
 import { EntryPayloadSchema } from '@/lib/validations';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-
-interface EntryDoc {
-  _id: string;
-  amount: number;
-  date: string;
-  user: string;
-  is_iou?: boolean;
-  payment_method: string;
-  type: string;
-}
 
 interface IOUData {
   contactId: string;
@@ -28,122 +17,53 @@ interface IOUData {
   details?: string;
 }
 
-// Helper for IOU side-effects
-async function handleIOUEffect(
-  entry: EntryDoc,
-  iouData: IOUData,
-  isReversal = false,
-  session?: mongoose.ClientSession
-) {
-  const { contactId, iouType, iouAction, details } = iouData;
-  const contact = await IOUContact.findById(contactId).session(session ?? null);
-  if (!contact) return;
-
-  const multiplier = isReversal ? -1 : 1;
-  const amount = entry.amount * multiplier;
-
-  if (iouType === 'receivable') {
-    contact.total_receivable += (iouAction === 'create' ? amount : -amount);
-  } else if (iouType === 'debt') {
-    contact.total_debt += (iouAction === 'create' ? amount : -amount);
-  }
-  // Lock in the primary section on the very first transaction
-  if (!contact.primary_type) {
-    contact.primary_type = iouType;
-  }
-  await contact.save({ session });
-
-  if (isReversal) {
-    await IOUTransaction.deleteOne({ entry: entry._id }).session(session ?? null);
-  } else {
-    await IOUTransaction.create(
-      [{
-        contact: contactId,
-        entry: entry._id,
-        iou_type: iouType,
-        iou_action: iouAction,
-        amount: entry.amount,
-        date: entry.date,
-        user: entry.user,
-        details,
-      }],
-      { session }
-    );
-  }
-}
-
 export async function getEntries(month: number, year: number) {
   await dbConnect();
   const user = await getCurrentUser();
   if (!user) return { expenses: {}, cashin: {}, prevBalance: 0 };
 
-  const startOfMonth = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-  const endOfMonth = `${year}-${String(month + 1).padStart(2, '0')}-31`;
+  const monthStr = String(month + 1).padStart(2, '0');
+  const startOfMonth = `${year}-${monthStr}-01`;
+  const endOfMonth = `${year}-${monthStr}-31`;
 
-  // Fetch entries for the current month view
-  const entriesQuery = Entry.find({
-    user: user.userId,
-    date: { $gte: startOfMonth, $lte: endOfMonth }
+  // Single query: entries for the requested month only (no populate needed — IOU is inline)
+  const entries = await Entry.find({
+    date: { $gte: startOfMonth, $lte: endOfMonth },
   })
-  .sort({ date: 1, createdAt: 1 })
-  .populate({ path: 'iou_details', strictPopulate: false });
+    .sort({ date: 1, createdAt: 1 })
+    .lean();
 
-  const entries = await entriesQuery.lean();
-
-  const grouped: { expenses: Record<string, EntryDoc[]>; cashin: Record<string, EntryDoc[]> } = {
+  const grouped: { expenses: Record<string, typeof entries>; cashin: Record<string, typeof entries> } = {
     expenses: {},
     cashin: {},
   };
 
-  entries.forEach((e: EntryDoc) => {
-    const date = e.date;
+  for (const e of entries) {
     const typeKey = e.type === 'expense' ? 'expenses' : 'cashin';
-    if (!grouped[typeKey][date]) {
-      grouped[typeKey][date] = [];
-    }
-    grouped[typeKey][date].push(e);
-  });
+    if (!grouped[typeKey][e.date]) grouped[typeKey][e.date] = [];
+    grouped[typeKey][e.date].push(e);
+  }
 
-  // 1. Get current total balance of all payment methods
-  const methods = await PaymentMethod.find({ user: user.userId }).lean();
-  const totalCurrentBalance = methods.reduce((acc: number, m: { balance?: number }) => acc + (Number(m.balance) || 0), 0);
-
-  // 2. Calculate net sum of entries from startOfMonth until now (infinity) using MongoDB Aggregation
-  const normalizeDate = (d: string) => {
-    const parts = d.split('-');
-    if (parts.length !== 3) return d;
-    return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-  };
-
-  const normalizedStart = normalizeDate(startOfMonth);
-
-  const aggregationResult = await Entry.aggregate([
-    {
-      $match: {
-        user: new mongoose.Types.ObjectId(user.userId as string),
-        // Using string comparison since dates are stored as YYYY-MM-DD
-        date: { $gte: normalizedStart }
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        totalCashin: {
-          $sum: { $cond: [{ $eq: ["$type", "cashin"] }, "$amount", 0] }
+  // Compute prevBalance = totalCurrentBalance - net activity from startOfMonth onward
+  const [methods, aggregationResult] = await Promise.all([
+    PaymentMethod.find({}).select('balance').lean(),
+    Entry.aggregate([
+      { $match: { date: { $gte: startOfMonth } } },
+      {
+        $group: {
+          _id: null,
+          totalCashin:  { $sum: { $cond: [{ $eq: ['$type', 'cashin'] },  '$amount', 0] } },
+          totalExpense: { $sum: { $cond: [{ $eq: ['$type', 'expense'] }, '$amount', 0] } },
         },
-        totalExpense: {
-          $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
-        }
-      }
-    }
+      },
+    ]),
   ]);
 
-  const futureNet = aggregationResult.length > 0 
+  const totalCurrentBalance = methods.reduce((acc, m) => acc + (Number(m.balance) || 0), 0);
+  const futureNet = aggregationResult.length > 0
     ? aggregationResult[0].totalCashin - aggregationResult[0].totalExpense
     : 0;
-
   const prevBalance = totalCurrentBalance - futureNet;
-  
 
   return JSON.parse(JSON.stringify({ ...grouped, prevBalance }));
 }
@@ -170,24 +90,39 @@ export async function addEntry(type: 'expense' | 'cashin', payload: EntryPayload
   session.startTransaction();
   try {
     for (const p of parsed.data) {
-      const [entry] = await Entry.create(
-        [{ ...p, type, user: user.userId, is_iou: !!p.iou }],
+      // Build the IOU sub-document inline if present
+      const iouSubDoc = p.iou
+        ? {
+            contact_id: p.iou.contactId,
+            iou_type: p.iou.iouType,
+            iou_action: p.iou.iouAction,
+            details: p.iou.details || '',
+          }
+        : null;
+
+      await Entry.create(
+        [{ ...p, type, iou: iouSubDoc }],
         { session }
       );
 
       // Update payment method balance
-      const method = await PaymentMethod.findOne({ name: p.payment_method, user: user.userId }).session(session);
+      const method = await PaymentMethod.findOne({ name: p.payment_method }).session(session);
       if (method) {
         method.balance += type === 'cashin' ? p.amount : -p.amount;
         await method.save({ session });
       }
 
-      // Handle IOU logic
+      // Update IOU contact totals
       if (p.iou) {
-        await handleIOUEffect(entry, p.iou, false, session);
-        const iouTx = await IOUTransaction.findOne({ entry: entry._id }).select('_id').session(session);
-        if (iouTx) {
-          await Entry.findByIdAndUpdate(entry._id, { iou_details: iouTx._id }, { session });
+        const contact = await IOUContact.findById(p.iou.contactId).session(session);
+        if (contact) {
+          if (p.iou.iouType === 'receivable') {
+            contact.total_receivable += p.iou.iouAction === 'create' ? p.amount : -p.amount;
+          } else if (p.iou.iouType === 'debt') {
+            contact.total_debt += p.iou.iouAction === 'create' ? p.amount : -p.amount;
+          }
+          if (!contact.primary_type) contact.primary_type = p.iou.iouType;
+          await contact.save({ session });
         }
       }
     }
@@ -217,46 +152,63 @@ export async function updateEntry(type: 'expense' | 'cashin', id: string, payloa
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const oldEntry = await Entry.findOne({ _id: id, user: user.userId }).session(session);
+    const oldEntry = await Entry.findById(id).session(session);
     if (!oldEntry) throw new Error('Entry not found');
 
-    // Revert old IOU effect first
-    if (oldEntry.is_iou) {
-      const oldTransaction = await IOUTransaction.findOne({ entry: oldEntry._id }).session(session);
-      if (oldTransaction) {
-        await handleIOUEffect(oldEntry, {
-          contactId: oldTransaction.contact,
-          iouType: oldTransaction.iou_type,
-          iouAction: oldTransaction.iou_action
-        }, true, session);
+    // Revert old IOU contact totals
+    if (oldEntry.iou) {
+      const oldContact = await IOUContact.findById(oldEntry.iou.contact_id).session(session);
+      if (oldContact) {
+        if (oldEntry.iou.iou_type === 'receivable') {
+          oldContact.total_receivable -= oldEntry.iou.iou_action === 'create' ? oldEntry.amount : -oldEntry.amount;
+        } else if (oldEntry.iou.iou_type === 'debt') {
+          oldContact.total_debt -= oldEntry.iou.iou_action === 'create' ? oldEntry.amount : -oldEntry.amount;
+        }
+        await oldContact.save({ session });
       }
     }
 
     // Revert old payment method balance
-    const oldMethod = await PaymentMethod.findOne({ name: oldEntry.payment_method, user: user.userId }).session(session);
+    const oldMethod = await PaymentMethod.findOne({ name: oldEntry.payment_method }).session(session);
     if (oldMethod) {
       oldMethod.balance += oldEntry.type === 'cashin' ? -oldEntry.amount : oldEntry.amount;
       await oldMethod.save({ session });
     }
 
-    // Update entry
+    // Build new IOU sub-document
+    const iouSubDoc = parsed.data.iou
+      ? {
+          contact_id: parsed.data.iou.contactId,
+          iou_type: parsed.data.iou.iouType,
+          iou_action: parsed.data.iou.iouAction,
+          details: parsed.data.iou.details || '',
+        }
+      : null;
+
+    // Apply updates
     Object.assign(oldEntry, parsed.data);
-    oldEntry.is_iou = !!parsed.data.iou;
+    oldEntry.iou = iouSubDoc;
     await oldEntry.save({ session });
 
     // Apply new payment method balance
-    const newMethod = await PaymentMethod.findOne({ name: parsed.data.payment_method, user: user.userId }).session(session);
+    const newMethod = await PaymentMethod.findOne({ name: parsed.data.payment_method }).session(session);
     if (newMethod) {
       newMethod.balance += type === 'cashin' ? parsed.data.amount : -parsed.data.amount;
       await newMethod.save({ session });
     }
 
-    // Apply new IOU effect
+    // Apply new IOU contact totals
     if (parsed.data.iou) {
-      await handleIOUEffect(oldEntry, parsed.data.iou, false, session);
-      const iouTx = await IOUTransaction.findOne({ entry: oldEntry._id }).select('_id').session(session);
-      oldEntry.iou_details = iouTx?._id;
-      await oldEntry.save({ session });
+      const newContact = await IOUContact.findById(parsed.data.iou.contactId).session(session);
+      if (newContact) {
+        if (parsed.data.iou.iouType === 'receivable') {
+          newContact.total_receivable += parsed.data.iou.iouAction === 'create' ? parsed.data.amount : -parsed.data.amount;
+        } else if (parsed.data.iou.iouType === 'debt') {
+          newContact.total_debt += parsed.data.iou.iouAction === 'create' ? parsed.data.amount : -parsed.data.amount;
+        }
+        if (!newContact.primary_type) newContact.primary_type = parsed.data.iou.iouType;
+        await newContact.save({ session });
+      }
     }
 
     await session.commitTransaction();
@@ -281,21 +233,24 @@ export async function deleteEntry(type: 'expense' | 'cashin', id: string) {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const entry = await Entry.findOne({ _id: id, user: user.userId }).session(session);
+    const entry = await Entry.findById(id).session(session);
     if (!entry) throw new Error('Entry not found');
 
-    // Revert IOU effect if present
-    const iouTx = await IOUTransaction.findOne({ entry: entry._id }).session(session);
-    if (iouTx) {
-      await handleIOUEffect(entry, {
-        contactId: iouTx.contact,
-        iouType: iouTx.iou_type,
-        iouAction: iouTx.iou_action
-      }, true, session);
+    // Revert IOU contact totals
+    if (entry.iou) {
+      const contact = await IOUContact.findById(entry.iou.contact_id).session(session);
+      if (contact) {
+        if (entry.iou.iou_type === 'receivable') {
+          contact.total_receivable -= entry.iou.iou_action === 'create' ? entry.amount : -entry.amount;
+        } else if (entry.iou.iou_type === 'debt') {
+          contact.total_debt -= entry.iou.iou_action === 'create' ? entry.amount : -entry.amount;
+        }
+        await contact.save({ session });
+      }
     }
 
     // Revert payment method balance
-    const method = await PaymentMethod.findOne({ name: entry.payment_method, user: user.userId }).session(session);
+    const method = await PaymentMethod.findOne({ name: entry.payment_method }).session(session);
     if (method) {
       method.balance += entry.type === 'cashin' ? -entry.amount : entry.amount;
       await method.save({ session });

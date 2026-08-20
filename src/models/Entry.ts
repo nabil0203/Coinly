@@ -1,8 +1,30 @@
 import mongoose from 'mongoose';
 
+const IOUSubSchema = new mongoose.Schema({
+  contact_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'IOUContact',
+    required: true,
+  },
+  iou_type: {
+    type: String,
+    enum: ['debt', 'receivable'],
+    required: true,
+  },
+  iou_action: {
+    type: String,
+    enum: ['create', 'repay'],
+    required: true,
+  },
+  details: {
+    type: String,
+    default: '',
+  },
+}, { _id: false });
+
 const EntrySchema = new mongoose.Schema({
   date: {
-    type: String, // String formatted as YYYY-MM-DD for easier ledger grouping
+    type: String, // YYYY-MM-DD for easy string comparison
     required: true,
   },
   description: {
@@ -20,29 +42,21 @@ const EntrySchema = new mongoose.Schema({
     required: true,
   },
   payment_method: {
-    type: String, // Using name for now, but could be ObjectId
+    type: String,
     required: true,
   },
-  is_iou: {
-    type: Boolean,
-    default: false,
-  },
-  iou_details: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'IOUTransaction',
-  },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+  // Inline IOU data — no separate collection needed for single-user app
+  iou: {
+    type: IOUSubSchema,
+    default: null,
   },
 }, {
   timestamps: true,
 });
 
-// Indexes for common query patterns
-EntrySchema.index({ user: 1, date: 1 });  // Monthly ledger view
-EntrySchema.index({ user: 1, type: 1 });  // Aggregation by type
+// Only indexes we actually need for single-user queries
+EntrySchema.index({ date: 1 });                         // Monthly ledger view
+EntrySchema.index({ 'iou.contact_id': 1 });             // Contact history lookup
 
 const Entry = mongoose.models.Entry || mongoose.model('Entry', EntrySchema);
 export default Entry;

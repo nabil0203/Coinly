@@ -8,14 +8,14 @@ interface EditingEntry {
   description?: string;
   amount?: number | string;
   payment_method?: string;
-  is_iou?: boolean;
   date?: string;
-  iou_details?: {
-    contact?: string;
+  // Inline IOU sub-document (new schema)
+  iou?: {
+    contact_id?: string;
     iou_type?: 'debt' | 'receivable';
     iou_action?: 'create' | 'repay';
     details?: string;
-  };
+  } | null;
 }
 
 interface EntryFormProps {
@@ -74,11 +74,11 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
           description: editEntry.description || '',
           amount: String(editEntry.amount || ''),
           payment_method: editEntry.payment_method || defaultMethod,
-          is_iou: editEntry.is_iou || false,
-          iou_contact_id: editEntry.iou_details?.contact || '',
-          iou_type: editEntry.iou_details?.iou_type || (type === 'expense' ? 'receivable' : 'debt'),
-          iou_action: editEntry.iou_details?.iou_action || 'create',
-          iou_details: editEntry.iou_details?.details || ''
+          is_iou: !!editEntry.iou,
+          iou_contact_id: editEntry.iou?.contact_id || '',
+          iou_type: editEntry.iou?.iou_type || (type === 'expense' ? 'receivable' : 'debt'),
+          iou_action: editEntry.iou?.iou_action || 'create',
+          iou_details: editEntry.iou?.details || ''
         }]);
         setSelectedDate(editEntry.date || dateStr);
       } else {

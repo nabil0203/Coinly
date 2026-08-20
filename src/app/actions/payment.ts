@@ -12,7 +12,7 @@ export const getPaymentMethods = cache(async () => {
   const user = await getCurrentUser();
   if (!user) return [];
 
-  const methods = await PaymentMethod.find({ user: user.userId }).lean();
+  const methods = await PaymentMethod.find({}).lean();
   return JSON.parse(JSON.stringify(methods));
 });
 
@@ -26,21 +26,18 @@ export async function addPaymentMethod(name: string, balance: number = 0) {
   const method = await PaymentMethod.create({
     name: parsed.data.name,
     balance: parsed.data.balance,
-    user: user.userId
   });
 
   revalidatePath('/');
   return JSON.parse(JSON.stringify(method));
 }
 
-
-
 export async function deletePaymentMethod(id: string) {
   await dbConnect();
   const user = await getCurrentUser();
   if (!user) return;
 
-  await PaymentMethod.deleteOne({ _id: id, user: user.userId });
+  await PaymentMethod.deleteOne({ _id: id });
   revalidatePath('/profile');
   revalidatePath('/');
 }
@@ -52,7 +49,7 @@ export async function renamePaymentMethod(id: string, newName: string) {
   const user = await getCurrentUser();
   if (!user) return;
 
-  const pm = await PaymentMethod.findOne({ _id: id, user: user.userId });
+  const pm = await PaymentMethod.findById(id);
   if (pm) {
     pm.name = parsed.data.name;
     await pm.save();

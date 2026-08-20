@@ -1,10 +1,8 @@
 'use server';
 
-import { Types } from 'mongoose';
 import dbConnect from '@/lib/db';
 import IOUContact from '@/models/IOUContact';
-import IOUTransaction from '@/models/IOUTransaction';
-import Entry from '@/models/Entry'; // Must import to register model for population
+import Entry from '@/models/Entry';
 import { getCurrentUser } from '@/lib/auth';
 import { ContactSchema } from '@/lib/validations';
 import { revalidatePath } from 'next/cache';
@@ -14,34 +12,7 @@ export async function getIOUContacts() {
   const user = await getCurrentUser();
   if (!user) return [];
 
-  const contacts = await IOUContact.find({ user: user.userId }).sort({ name: 1 });
-
-  // Auto-backfill primary_type for pre-existing contacts that don't have it set.
-  // Uses a single $lookup aggregation instead of N+1 queries.
-  const needsBackfill = contacts.filter((c: { primary_type?: string }) => !c.primary_type);
-  if (needsBackfill.length > 0) {
-    const contactIds = needsBackfill.map((c: { _id: string }) => c._id);
-
-    // Single aggregation: join the earliest transaction per contact
-    const firstTxByContact: { _id: string; iou_type: string }[] = await IOUTransaction.aggregate([
-      { $match: { contact: { $in: contactIds }, user: new Types.ObjectId(user.userId) } },
-      { $sort: { date: 1, createdAt: 1 } },
-      { $group: { _id: '$contact', iou_type: { $first: '$iou_type' } } },
-    ]);
-
-    const typeMap = new Map(firstTxByContact.map(tx => [tx._id.toString(), tx.iou_type]));
-
-    // Batch-save only contacts that actually have a transaction
-    await Promise.all(
-      needsBackfill
-        .filter((c: { _id: string }) => typeMap.has(c._id.toString()))
-        .map(async (contact: { _id: string; primary_type?: string; save: () => Promise<void> }) => {
-          contact.primary_type = typeMap.get(contact._id.toString());
-          await contact.save();
-        })
-    );
-  }
-
+  const contacts = await IOUContact.find({}).sort({ name: 1 }).lean();
   return JSON.parse(JSON.stringify(contacts));
 }
 
@@ -50,10 +21,23 @@ export async function getContactHistory(contactId: string) {
   const user = await getCurrentUser();
   if (!user) return [];
 
-  const history = await IOUTransaction.find({ 
-    contact: contactId, 
-    user: user.userId 
-  }).populate('entry').sort({ date: -1, createdAt: -1 }).lean();
+  // IOU data is now embedded in Entry — query directly, no separate collection needed
+  const entries = await Entry.find({ 'iou.contact_id': contactId })
+    .sort({ date: -1, createdAt: -1 })
+    .lean();
+
+  // Shape the response to match what the UI expects (same structure as old IOUTransaction + populated entry)
+  const history = entries.map((e) => ({
+    _id: e._id,
+    contact: contactId,
+    iou_type: e.iou?.iou_type,
+    iou_action: e.iou?.iou_action,
+    amount: e.amount,
+    date: e.date,
+    details: e.iou?.details,
+    entry: e,
+  }));
+
   return JSON.parse(JSON.stringify(history));
 }
 
@@ -65,9 +49,9 @@ export async function createOrUpdateContact(name: string) {
     const user = await getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    let contact = await IOUContact.findOne({ name: parsed.data.name, user: user.userId });
+    let contact = await IOUContact.findOne({ name: parsed.data.name });
     if (!contact) {
-      contact = await IOUContact.create({ name: parsed.data.name, user: user.userId });
+      contact = await IOUContact.create({ name: parsed.data.name });
     }
     return JSON.parse(JSON.stringify(contact));
   } catch (error: unknown) {
@@ -75,28 +59,22 @@ export async function createOrUpdateContact(name: string) {
     throw new Error((error as Error).message || 'Unknown error occurred while adding contact');
   }
 }
+
 export async function deleteIOUContact(contactId: string) {
   try {
     await dbConnect();
     const user = await getCurrentUser();
     if (!user) throw new Error('Unauthorized');
 
-    // Delete all transactions first
-    const transactions = await IOUTransaction.find({ contact: contactId, user: user.userId });
-    const entryIds = transactions.map((t: { entry?: string }) => t.entry);
-
-    // Disassociate ledger entries (optional but cleaner)
+    // Disassociate entries that reference this contact (clear the inline iou sub-doc)
     await Entry.updateMany(
-      { _id: { $in: entryIds }, user: user.userId },
-      { $set: { is_iou: false, iou_details: null } }
+      { 'iou.contact_id': contactId },
+      { $unset: { iou: '' } }
     );
 
-    // Delete transactions and contact
-    await IOUTransaction.deleteMany({ contact: contactId, user: user.userId });
-    await IOUContact.deleteOne({ _id: contactId, user: user.userId });
+    await IOUContact.deleteOne({ _id: contactId });
 
-    revalidatePath('/', 'layout'); // Invalidates all routes so EntryForm contact lists refresh everywhere
-    
+    revalidatePath('/', 'layout');
     return { success: true };
   } catch (error: unknown) {
     console.error('Error deleting contact:', error);

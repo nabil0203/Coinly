@@ -5,11 +5,6 @@ const IOUContactSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
   total_receivable: {
     type: Number,
     default: 0, // How much THEY owe the USER
@@ -23,13 +18,13 @@ const IOUContactSchema = new mongoose.Schema({
   primary_type: {
     type: String,
     enum: ['receivable', 'debt'],
-    default: null, // Set on first transaction to remember which section this contact belongs to
+    default: null, // Set on first transaction — determines which section in /debts
   },
 }, {
   timestamps: true,
 });
 
-// Compound index to ensure uniqueness per user
-IOUContactSchema.index({ name: 1, user: 1 }, { unique: true });
+// Simple unique name index — no user scoping needed for single-user app
+IOUContactSchema.index({ name: 1 }, { unique: true });
 
 export default mongoose.models.IOUContact || mongoose.model('IOUContact', IOUContactSchema);

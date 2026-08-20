@@ -4,7 +4,7 @@
  * These tests cover the highest-risk operations:
  *  - addEntry: creates an entry and updates payment method balance
  *  - deleteEntry: reverts balance and IOU side-effects
- *  - IOU reversal: handleIOUEffect called via addEntry/deleteEntry
+ *  - IOU reversal: contact totals updated via addEntry/deleteEntry
  *
  * Auth (getCurrentUser) and Next.js APIs (revalidatePath, cookies) are mocked.
  */
@@ -35,37 +35,24 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/lib/db', () => ({ default: vi.fn(() => Promise.resolve()) }));
 
 // ─── Import models and actions AFTER mocks are in place ──────────────────────
-import User from '@/models/User';
 import PaymentMethod from '@/models/PaymentMethod';
 import Entry from '@/models/Entry';
 import IOUContact from '@/models/IOUContact';
-import IOUTransaction from '@/models/IOUTransaction';
 import { addEntry, deleteEntry, updateEntry } from '@/app/actions/ledger';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-async function createTestUser() {
-  return User.create({
-    _id: new mongoose.Types.ObjectId(TEST_USER_ID),
-    full_name: 'Test User',
-    username: 'testuser',
-    email: 'test@coinly.test',
-    password: 'hashed-password',
-  });
-}
-
 async function createPaymentMethod(name = 'Cash', balance = 1000) {
-  return PaymentMethod.create({ name, balance, user: TEST_USER_ID });
+  return PaymentMethod.create({ name, balance });
 }
 
 async function createIOUContact(name = 'Alice') {
-  return IOUContact.create({ name, user: TEST_USER_ID });
+  return IOUContact.create({ name });
 }
 
 // ─── Test Suites ─────────────────────────────────────────────────────────────
 
 describe('addEntry — expense', () => {
   beforeEach(async () => {
-    await createTestUser();
     await createPaymentMethod('Cash', 1000);
   });
 
@@ -77,7 +64,7 @@ describe('addEntry — expense', () => {
       date: '2026-05-01',
     });
 
-    const entries = await Entry.find({ user: TEST_USER_ID });
+    const entries = await Entry.find({});
     expect(entries).toHaveLength(1);
     expect(entries[0].amount).toBe(200);
     expect(entries[0].type).toBe('expense');
@@ -91,14 +78,13 @@ describe('addEntry — expense', () => {
       date: '2026-05-01',
     });
 
-    const method = await PaymentMethod.findOne({ name: 'Cash', user: TEST_USER_ID });
+    const method = await PaymentMethod.findOne({ name: 'Cash' });
     expect(method?.balance).toBe(700); // 1000 - 300
   });
 });
 
 describe('addEntry — cashin', () => {
   beforeEach(async () => {
-    await createTestUser();
     await createPaymentMethod('Bank', 500);
   });
 
@@ -110,7 +96,7 @@ describe('addEntry — cashin', () => {
       date: '2026-05-01',
     });
 
-    const entries = await Entry.find({ user: TEST_USER_ID });
+    const entries = await Entry.find({});
     expect(entries[0].type).toBe('cashin');
   });
 
@@ -122,14 +108,13 @@ describe('addEntry — cashin', () => {
       date: '2026-05-01',
     });
 
-    const method = await PaymentMethod.findOne({ name: 'Bank', user: TEST_USER_ID });
+    const method = await PaymentMethod.findOne({ name: 'Bank' });
     expect(method?.balance).toBe(2500); // 500 + 2000
   });
 });
 
 describe('deleteEntry', () => {
   beforeEach(async () => {
-    await createTestUser();
     await createPaymentMethod('Cash', 1000);
   });
 
@@ -141,12 +126,12 @@ describe('deleteEntry', () => {
       date: '2026-05-01',
     });
 
-    const entry = await Entry.findOne({ user: TEST_USER_ID });
+    const entry = await Entry.findOne({});
     expect(entry).not.toBeNull();
 
     await deleteEntry('expense', entry!._id.toString());
 
-    const remaining = await Entry.find({ user: TEST_USER_ID });
+    const remaining = await Entry.find({});
     expect(remaining).toHaveLength(0);
   });
 
@@ -158,22 +143,19 @@ describe('deleteEntry', () => {
       date: '2026-05-01',
     });
 
-    // Balance should be 600 after expense
-    const afterAdd = await PaymentMethod.findOne({ name: 'Cash', user: TEST_USER_ID });
+    const afterAdd = await PaymentMethod.findOne({ name: 'Cash' });
     expect(afterAdd?.balance).toBe(600);
 
-    const entry = await Entry.findOne({ user: TEST_USER_ID });
+    const entry = await Entry.findOne({});
     await deleteEntry('expense', entry!._id.toString());
 
-    // Balance should be restored to 1000
-    const afterDelete = await PaymentMethod.findOne({ name: 'Cash', user: TEST_USER_ID });
+    const afterDelete = await PaymentMethod.findOne({ name: 'Cash' });
     expect(afterDelete?.balance).toBe(1000);
   });
 });
 
 describe('IOU side-effects', () => {
   beforeEach(async () => {
-    await createTestUser();
     await createPaymentMethod('Cash', 5000);
   });
 
@@ -216,12 +198,12 @@ describe('IOU side-effects', () => {
     expect(updated?.primary_type).toBe('receivable');
   });
 
-  it('creates an IOUTransaction record on addEntry with IOU data', async () => {
+  it('embeds IOU data inside the Entry document', async () => {
     const contact = await createIOUContact('Dave');
 
     await addEntry('expense', {
       amount: 300,
-      description: 'Paid Dave\'s bill',
+      description: "Paid Dave's bill",
       payment_method: 'Cash',
       date: '2026-05-01',
       iou: {
@@ -231,10 +213,11 @@ describe('IOU side-effects', () => {
       },
     });
 
-    const txs = await IOUTransaction.find({ user: TEST_USER_ID });
-    expect(txs).toHaveLength(1);
-    expect(txs[0].iou_type).toBe('debt');
-    expect(txs[0].amount).toBe(300);
+    const entry = await Entry.findOne({});
+    expect(entry?.iou).not.toBeNull();
+    expect(entry?.iou?.iou_type).toBe('debt');
+    expect(entry?.iou?.iou_action).toBe('create');
+    expect(entry?.amount).toBe(300);
   });
 
   it('reverses IOU contact balance on deleteEntry', async () => {
@@ -252,26 +235,23 @@ describe('IOU side-effects', () => {
       },
     });
 
-    // Contact receivable should now be 1000
     const afterAdd = await IOUContact.findById(contact._id);
     expect(afterAdd?.total_receivable).toBe(1000);
 
-    const entry = await Entry.findOne({ user: TEST_USER_ID });
+    const entry = await Entry.findOne({});
     await deleteEntry('cashin', entry!._id.toString());
 
-    // Contact receivable should be restored to 0
     const afterDelete = await IOUContact.findById(contact._id);
     expect(afterDelete?.total_receivable).toBe(0);
 
-    // IOUTransaction should be deleted
-    const txs = await IOUTransaction.find({ user: TEST_USER_ID });
-    expect(txs).toHaveLength(0);
+    // Entry should be gone
+    const remaining = await Entry.find({});
+    expect(remaining).toHaveLength(0);
   });
 });
 
 describe('updateEntry', () => {
   beforeEach(async () => {
-    await createTestUser();
     await createPaymentMethod('Cash', 1000);
     await createPaymentMethod('Bank', 2000);
   });
@@ -284,8 +264,7 @@ describe('updateEntry', () => {
       date: '2026-05-01',
     });
 
-    // Cash should be 800 after expense
-    const entry = await Entry.findOne({ user: TEST_USER_ID });
+    const entry = await Entry.findOne({});
     await updateEntry('expense', entry!._id.toString(), {
       amount: 500,
       description: 'Updated',
@@ -293,7 +272,7 @@ describe('updateEntry', () => {
       date: '2026-05-01',
     });
 
-    const method = await PaymentMethod.findOne({ name: 'Cash', user: TEST_USER_ID });
+    const method = await PaymentMethod.findOne({ name: 'Cash' });
     expect(method?.balance).toBe(500); // 1000 - 500
   });
 
@@ -305,7 +284,7 @@ describe('updateEntry', () => {
       date: '2026-05-01',
     });
 
-    const entry = await Entry.findOne({ user: TEST_USER_ID });
+    const entry = await Entry.findOne({});
     await updateEntry('expense', entry!._id.toString(), {
       amount: 300,
       description: 'Updated on Bank',
@@ -313,8 +292,8 @@ describe('updateEntry', () => {
       date: '2026-05-01',
     });
 
-    const cash = await PaymentMethod.findOne({ name: 'Cash', user: TEST_USER_ID });
-    const bank = await PaymentMethod.findOne({ name: 'Bank', user: TEST_USER_ID });
+    const cash = await PaymentMethod.findOne({ name: 'Cash' });
+    const bank = await PaymentMethod.findOne({ name: 'Bank' });
 
     expect(cash?.balance).toBe(1000); // fully restored
     expect(bank?.balance).toBe(1700); // 2000 - 300
