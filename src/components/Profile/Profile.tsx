@@ -76,11 +76,11 @@ export function Profile({ user, paymentMethods }: ProfileProps) {
         />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 max-h-full">
+      <div className="relative z-10 max-w-[1400px] mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 pb-16 md:pb-8">
         {/* ── Sidebar Navigation ── */}
-        <div className="w-full md:w-64 lg:w-72 shrink-0 flex flex-col gap-2">
+        <div className="w-full md:w-64 lg:w-72 shrink-0 md:sticky md:top-8 self-start flex flex-col gap-2">
           <div
-            className="rounded-3xl p-3 md:p-4 md:flex-1 md:overflow-y-auto hidden-scrollbar"
+            className="rounded-3xl p-3 md:p-4"
             style={{
               background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
               backgroundColor: '#0F1929',
@@ -94,7 +94,7 @@ export function Profile({ user, paymentMethods }: ProfileProps) {
             >
               Settings
             </h2>
-            <div className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+            <div className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-1 md:pb-0">
               {tabs.map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -134,7 +134,7 @@ export function Profile({ user, paymentMethods }: ProfileProps) {
 
         {/* ── Main Content Area ── */}
         <div
-          className="flex-1 rounded-3xl overflow-hidden"
+          className="flex-1 rounded-3xl p-5 sm:p-7 md:p-8"
           style={{
             background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
             backgroundColor: '#0F1929',
@@ -142,29 +142,27 @@ export function Profile({ user, paymentMethods }: ProfileProps) {
             boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
           }}
         >
-          <div className="h-full overflow-y-auto no-scrollbar p-5 sm:p-7 md:p-8">
-            <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 pb-8 md:pb-0">
-              {activeTab === 'info' && (
-                <ProfileInformation
-                  user={user}
-                  updateProfileAction={updateProfileAction}
-                />
-              )}
-              {activeTab === 'account' && (
-                <AccountSettings
-                  user={user}
-                  changePasswordAction={changePasswordAction}
-                />
-              )}
-              {activeTab === 'payment' && (
-                <PaymentMethodsSettings
-                  paymentMethods={paymentMethods || user.payment_methods || []}
-                  addPaymentMethod={addPaymentMethod}
-                  renamePaymentMethod={renamePaymentMethod}
-                  deletePaymentMethod={deletePaymentMethod}
-                />
-              )}
-            </div>
+          <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
+            {activeTab === 'info' && (
+              <ProfileInformation
+                user={user}
+                updateProfileAction={updateProfileAction}
+              />
+            )}
+            {activeTab === 'account' && (
+              <AccountSettings
+                user={user}
+                changePasswordAction={changePasswordAction}
+              />
+            )}
+            {activeTab === 'payment' && (
+              <PaymentMethodsSettings
+                paymentMethods={paymentMethods || user.payment_methods || []}
+                addPaymentMethod={addPaymentMethod}
+                renamePaymentMethod={renamePaymentMethod}
+                deletePaymentMethod={deletePaymentMethod}
+              />
+            )}
           </div>
         </div>
       </div>
