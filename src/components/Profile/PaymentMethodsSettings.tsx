@@ -237,7 +237,7 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
                   {pm.name}
                 </h4>
               )}
-              <p className="text-xs font-black tabular-nums mt-0.5" style={{ color: '#818CF8' }}>
+              <p className="text-base font-black tabular-nums mt-0.5 tracking-tight" style={{ color: '#818CF8' }}>
                 ৳ {pm.balance.toLocaleString()}
               </p>
             </div>

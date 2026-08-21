@@ -271,7 +271,6 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-sm lg:text-base font-bold leading-tight" style={{ color: '#F1F5F9' }}>Monthly Ledger</h3>
-                  <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>View transactions</p>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-auto transition-all duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   style={{ color: '#334155' }}>
@@ -308,7 +307,6 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-sm lg:text-base font-bold leading-tight" style={{ color: '#F1F5F9' }}>Mandatory Expenses</h3>
-                  <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>Bills & recurring</p>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-auto transition-all duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   style={{ color: '#334155' }}>
@@ -345,7 +343,6 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-sm lg:text-base font-bold leading-tight" style={{ color: '#F1F5F9' }}>Debt &amp; Receivable</h3>
-                  <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>Track money owed</p>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-auto transition-all duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   style={{ color: '#334155' }}>
