@@ -200,7 +200,7 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className={`${isEditing ? 'max-w-2xl' : 'max-w-3xl'} w-full max-h-[82vh] sm:max-h-[88vh] flex flex-col overflow-hidden rounded-3xl`}
+        className="max-w-3xl w-full max-h-[82vh] sm:max-h-[88vh] flex flex-col overflow-hidden rounded-3xl"
         style={{
           background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
           backgroundColor: '#0F1929',
