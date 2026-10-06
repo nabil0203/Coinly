@@ -239,43 +239,42 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
               )}
             </div>
 
-            <div>
-              <h3 className="text-base sm:text-lg font-black" style={{ color: accent.color }}>
-                {isEditing ? 'Edit' : 'Add'} {type === 'expense' ? 'Expense' : 'Money'}
-              </h3>
-              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider mt-0.5" style={{ color: '#CBD5E1' }}>
-                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
-            </div>
+            <h3 className="text-base sm:text-lg font-black" style={{ color: accent.color }}>
+              {isEditing ? 'Edit' : 'Add'} {type === 'expense' ? 'Expense' : 'Money'}
+            </h3>
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Date picker */}
-            <div className="relative group">
+            {/* Date pill */}
+            <div className="relative">
               <input
                 type="date"
                 className="absolute inset-0 opacity-0 cursor-pointer z-20 w-full h-full [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
-              <button
-                type="button"
-                className="p-2 sm:p-2.5 rounded-xl transition-all border relative z-10 active:scale-95 flex items-center justify-center"
-                style={{ color: '#CBD5E1', borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)' }}
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)';
-                  (e.currentTarget as HTMLElement).style.color = '#FFFFFF';
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.10)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.18)';
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
-                  (e.currentTarget as HTMLElement).style.color = '#CBD5E1';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.10)';
                 }}
-                title="Change Date"
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#94A3B8' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-              </button>
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider" style={{ color: '#CBD5E1' }}>
+                  {(() => {
+                    const d = new Date(selectedDate + 'T00:00:00');
+                    return `${String(d.getDate()).padStart(2, '0')} ${d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}`;
+                  })()}
+                </span>
+              </div>
             </div>
 
             {/* Close */}
@@ -302,7 +301,7 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
         {/* ── Form Body ── */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div
-            className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-3 sm:space-y-5 scrollbar-hide"
+            className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 space-y-2 sm:space-y-3 scrollbar-hide"
             style={{ backgroundColor: '#080E1A' }}
           >
             {entries.map((entry, index) => (
@@ -333,30 +332,27 @@ export function EntryForm({ isOpen, onClose, onSubmit, onDelete, type, dateStr, 
               <button
                 type="button"
                 onClick={handleAddMore}
-                className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 group transition-all active:scale-[0.98]"
+                className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                 style={{
-                  border: '2px dashed rgba(99,102,241,0.25)',
-                  color: '#94A3B8',
-                  background: 'transparent',
+                  background: 'rgba(99,102,241,0.08)',
+                  color: '#818CF8',
+                  border: '1px solid rgba(99,102,241,0.18)',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.55)';
-                  (e.currentTarget as HTMLElement).style.color = '#818CF8';
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.06)';
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.15)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.35)';
+                  (e.currentTarget as HTMLElement).style.color = '#A5B4FC';
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.25)';
-                  (e.currentTarget as HTMLElement).style.color = '#94A3B8';
-                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.08)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.18)';
+                  (e.currentTarget as HTMLElement).style.color = '#818CF8';
                 }}
               >
-                <div className="w-6 h-6 rounded-full flex items-center justify-center transition-all"
-                  style={{ background: 'rgba(99,102,241,0.12)', color: '#6366F1' }}>
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                </div>
-                Add Multiple Entries
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Another Entry
               </button>
             )}
           </div>

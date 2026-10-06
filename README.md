@@ -15,7 +15,7 @@
 
 ### 🔗 Live Demo (Deployed)
 
-#### ➡️ See Coinly in action: https://coinly0203.vercel.app/
+#### ➡️ See Coinly in action: https://mycoinly.vercel.app/
 
 ---
 
