@@ -31,14 +31,14 @@ interface EntryFormRowProps {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   backgroundColor: '#0a1525',
-  border: '1px solid rgba(255,255,255,0.08)',
+  border: '1.5px solid rgba(255,255,255,0.08)',
   borderRadius: '0.75rem',
-  color: '#F1F5F9',
+  color: '#f1f5f9a6',
   outline: 'none',
   transition: 'border-color 0.2s',
   padding: '0.5rem 0.75rem',
-  fontSize: '0.875rem',
-  fontWeight: 600,
+  fontSize: '0.9rem',
+  fontWeight: 400,
 };
 
 const selectStyle: React.CSSProperties = {
@@ -126,10 +126,7 @@ export function EntryFormRow({
         {/* Description */}
         <div className="col-span-2 md:col-span-5">
           <label style={labelStyle}>
-            {entriesCount > 1 && (
-              <span style={{ color: accent.color, marginRight: '0.35rem' }}>#{index + 1}</span>
-            )}
-            Description
+            <span style={{ color: accent.color }}>#{index + 1}</span>
           </label>
           <input
             type="text"
@@ -137,7 +134,7 @@ export function EntryFormRow({
             value={entry.description}
             onChange={e => handleEntryChange(index, { description: e.target.value })}
             required
-            placeholder="What was this for?"
+            placeholder="Description"
             onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = accent.color; }}
             onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
           />
@@ -315,7 +312,6 @@ export function EntryFormRow({
               style={inputStyle}
               value={entry.iou_details}
               onChange={e => handleEntryChange(index, { iou_details: e.target.value })}
-              placeholder="Specific notes e.g., For office lunch..."
               required={entry.is_iou}
               onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = '#6366F1'; }}
               onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
