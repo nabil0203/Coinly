@@ -136,7 +136,7 @@ export default function LoginPage() {
             }}>ly</span>
           </h1>
           <p className="font-medium text-xs sm:text-sm mt-1.5" style={{ color: '#94A3B8' }}>
-            Personal Finance &amp; Wealth Management
+            Personal Finance Management
           </p>
         </div>
 
