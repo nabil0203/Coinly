@@ -278,41 +278,6 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
                 </svg>
               </Link>
 
-              {/* Mandatory Expenses */}
-              <Link
-                href="/mandatory"
-                className="col-span-2 group flex items-center p-4 lg:p-5 rounded-2xl lg:rounded-3xl transition-all duration-300 w-full text-left interactive-card shimmer-hover"
-                style={{
-                  background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
-                  backgroundColor: '#0F1929',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(245,158,11,0.28)';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(245,158,11,0.10)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-                  (e.currentTarget as HTMLElement).style.transform = '';
-                }}
-              >
-                <div className="w-11 h-11 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl flex items-center justify-center border transition-all duration-300 shrink-0 group-hover:scale-110"
-                  style={{ background: 'rgba(245,158,11,0.10)', color: '#F59E0B', borderColor: 'rgba(245,158,11,0.20)' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-sm lg:text-base font-bold leading-tight" style={{ color: '#F1F5F9' }}>Mandatory Expenses</h3>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-auto transition-all duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                  style={{ color: '#334155' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
 
               {/* Debt & Receivable */}
               <Link
@@ -349,6 +314,45 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </Link>
+
+
+              {/* Mandatory Expenses */}
+            {/*
+              <Link
+                href="/mandatory"
+                className="col-span-2 group flex items-center p-4 lg:p-5 rounded-2xl lg:rounded-3xl transition-all duration-300 w-full text-left interactive-card shimmer-hover"
+                style={{
+                  background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+                  backgroundColor: '#0F1929',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(245,158,11,0.28)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(245,158,11,0.10)';
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)';
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+                  (e.currentTarget as HTMLElement).style.transform = '';
+                }}
+              >
+                <div className="w-11 h-11 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl flex items-center justify-center border transition-all duration-300 shrink-0 group-hover:scale-110"
+                  style={{ background: 'rgba(245,158,11,0.10)', color: '#F59E0B', borderColor: 'rgba(245,158,11,0.20)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-sm lg:text-base font-bold leading-tight" style={{ color: '#F1F5F9' }}>Mandatory Expenses</h3>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-auto transition-all duration-200 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  style={{ color: '#334155' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            */}
 
             </div>
           </div>
