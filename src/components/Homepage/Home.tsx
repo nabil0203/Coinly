@@ -317,6 +317,9 @@ export function Home({ displayName, paymentMethods }: HomeProps) {
 
 
               {/* Mandatory Expenses */}
+
+              {/* Check: src\components\Profile\Profile.tsx */}
+
             {/*
               <Link
                 href="/mandatory"

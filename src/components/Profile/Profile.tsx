@@ -56,16 +56,16 @@ export function Profile({ user, paymentMethods, mandatoryExpenses }: ProfileProp
         </svg>
       )
     },
-    {
-      id: 'mandatory',
-      label: 'Mandatory Expenses',
-      color: { bg: 'rgba(99,102,241,0.18)', bgDim: 'rgba(139,92,246,0.10)', text: '#818CF8', border: 'rgba(99,102,241,0.30)', shadow: 'rgba(99,102,241,0.15)' },
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      )
-    }
+    // {
+    //   id: 'mandatory',
+    //   label: 'Mandatory Expenses',
+    //   color: { bg: 'rgba(99,102,241,0.18)', bgDim: 'rgba(139,92,246,0.10)', text: '#818CF8', border: 'rgba(99,102,241,0.30)', shadow: 'rgba(99,102,241,0.15)' },
+    //   icon: (
+    //     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    //       <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    //     </svg>
+    //   )
+    // }
   ];
 
   return (
@@ -92,7 +92,7 @@ export function Profile({ user, paymentMethods, mandatoryExpenses }: ProfileProp
         />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 pb-16 md:pb-8">
+      <div className="relative z-10 max-w-350 mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 pb-16 md:pb-8">
         {/* ── Sidebar Navigation ── */}
         <div className="w-full md:w-64 lg:w-72 shrink-0 md:sticky md:top-8 self-start flex flex-col gap-2">
           <div
@@ -179,11 +179,11 @@ export function Profile({ user, paymentMethods, mandatoryExpenses }: ProfileProp
                 deletePaymentMethod={deletePaymentMethod}
               />
             )}
-            {activeTab === 'mandatory' && (
+            {/* {activeTab === 'mandatory' && (
               <MandatoryExpensesSettings
                 initialItems={mandatoryExpenses || []}
               />
-            )}
+            )} */}
           </div>
         </div>
       </div>
