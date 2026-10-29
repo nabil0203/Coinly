@@ -1,47 +1,25 @@
-import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import { AUTH_COOKIE, SESSION_SECONDS, signToken, verifyToken, type AuthUser } from '@/lib/jwt';
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is not set. The app cannot start without it.');
-}
-const JWT_SECRET = process.env.JWT_SECRET;
-
-interface AuthUser {
-  userId: string;
-  username: string;
-}
-
-export async function signToken(payload: AuthUser) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
-}
-
-async function verifyToken(token: string): Promise<AuthUser | null> {
-  try {
-    return jwt.verify(token, JWT_SECRET) as AuthUser;
-  } catch {
-    return null;
-  }
-}
-
-export async function setAuthCookie(token: string) {
+/** Signs the user in: issues a token and stores it in an httpOnly cookie. */
+export async function createSession(user: AuthUser) {
   const cookieStore = await cookies();
-  cookieStore.set('coinly_token', token, {
+  cookieStore.set(AUTH_COOKIE, await signToken(user), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 60 * 60 * 8, // 8 hours in seconds
+    maxAge: SESSION_SECONDS,
     path: '/',
   });
 }
 
 export async function removeAuthCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete('coinly_token');
+  cookieStore.delete(AUTH_COOKIE);
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get('coinly_token')?.value;
-  if (!token) return null;
-  return verifyToken(token);
+  const token = cookieStore.get(AUTH_COOKIE)?.value;
+  return token ? verifyToken(token) : null;
 }

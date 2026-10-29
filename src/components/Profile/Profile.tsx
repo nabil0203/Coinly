@@ -8,6 +8,7 @@ import { AccountSettings } from './AccountSettings';
 import { PaymentMethodsSettings } from './PaymentMethodsSettings';
 import { MandatoryExpensesSettings } from './MandatoryExpensesSettings';
 import type { MandatoryExpenseItem } from '@/app/actions/essentials';
+import type { PaymentMethodDTO } from '@/types';
 
 interface ProfileProps {
   user: {
@@ -15,10 +16,8 @@ interface ProfileProps {
     username: string;
     email: string;
     full_name?: string;
-    currency: string;
-    payment_methods?: { _id?: string; id?: string; name: string; balance: number }[];
   };
-  paymentMethods?: { _id?: string; id?: string; name: string; balance: number }[];
+  paymentMethods?: PaymentMethodDTO[];
   mandatoryExpenses?: MandatoryExpenseItem[];
 }
 
@@ -173,7 +172,7 @@ export function Profile({ user, paymentMethods, mandatoryExpenses }: ProfileProp
             )}
             {activeTab === 'payment' && (
               <PaymentMethodsSettings
-                paymentMethods={paymentMethods || user.payment_methods || []}
+                paymentMethods={paymentMethods || []}
                 addPaymentMethod={addPaymentMethod}
                 renamePaymentMethod={renamePaymentMethod}
                 deletePaymentMethod={deletePaymentMethod}

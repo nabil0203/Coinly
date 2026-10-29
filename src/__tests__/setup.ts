@@ -9,6 +9,8 @@ beforeAll(async () => {
   replSet = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   const uri = replSet.getUri();
   await mongoose.connect(uri);
+  // Wait for collections/indexes to exist so the first transaction doesn't race collection creation
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()));
 }, 60_000); // allow up to 60s for replica set init
 
 afterEach(async () => {

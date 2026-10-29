@@ -5,17 +5,11 @@ import { PaymentMethodsGrid } from './FinancialSummary';
 import { EntryForm } from '../EntryForm/EntryForm';
 import Link from 'next/link';
 import { addEntry, type EntryPayload } from '@/app/actions/ledger';
-
-interface PaymentMethodType {
-  _id?: string;
-  id?: string;
-  name: string;
-  balance: number;
-}
+import type { PaymentMethodDTO } from '@/types';
 
 interface HomeProps {
   displayName: string;
-  paymentMethods: PaymentMethodType[];
+  paymentMethods: PaymentMethodDTO[];
 }
 
 export function Home({ displayName, paymentMethods }: HomeProps) {

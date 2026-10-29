@@ -12,7 +12,7 @@ export const LoginSchema = z.object({
   password: z.string().min(1, "Password is required").max(100),
 });
 
-export const IOUDataSchema = z.object({
+const IOUDataSchema = z.object({
   contactId: z.string().trim().min(1),
   iouType: z.enum(['debt', 'receivable']),
   iouAction: z.enum(['create', 'repay']),
@@ -25,7 +25,7 @@ export const EntryPayloadSchema = z.object({
   date: z.string().trim().optional(),
   description: z.string().trim().max(1000).optional(),
   iou: IOUDataSchema.optional(),
-}).passthrough();
+});
 
 export const PaymentMethodSchema = z.object({
   name: z.string().trim().min(1, "Method name is required").max(50),

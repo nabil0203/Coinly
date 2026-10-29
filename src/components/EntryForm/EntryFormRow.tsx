@@ -1,4 +1,5 @@
 import React from 'react';
+import type { PaymentMethodDTO } from '@/types';
 
 export interface Entry {
   description: string;
@@ -18,7 +19,7 @@ interface EntryFormRowProps {
   entriesCount: number;
   type: 'expense' | 'cashin';
   iouContacts: { _id?: string; name?: string; total_receivable?: number; total_debt?: number;[key: string]: unknown }[];
-  paymentMethods: { _id?: string; id?: string; name: string; balance: number }[];
+  paymentMethods: PaymentMethodDTO[];
   handleRemoveEntry: (index: number) => void;
   handleEntryChange: (index: number, updates: Partial<Entry>) => void;
   isAddingContact: boolean;
@@ -172,7 +173,7 @@ export function EntryFormRow({
               onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
             >
               {paymentMethods.length > 0 ? paymentMethods.map(pm => (
-                <option key={pm._id || pm.id} value={pm.name}
+                <option key={pm._id} value={pm.name}
                   style={{ backgroundColor: '#0a1525', color: '#F1F5F9' }}>
                   {pm.name}
                 </option>

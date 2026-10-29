@@ -1,6 +1,6 @@
 'use server';
 
-import mongoose from 'mongoose';
+import mongoose, { type ClientSession } from 'mongoose';
 import dbConnect from '@/lib/db';
 import Entry from '@/models/Entry';
 import PaymentMethod from '@/models/PaymentMethod';
@@ -10,12 +10,8 @@ import { EntryPayloadSchema } from '@/lib/validations';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
-interface IOUData {
-  contactId: string;
-  iouType: string;
-  iouAction: string;
-  details?: string;
-}
+type EntryType = 'expense' | 'cashin';
+export type EntryPayload = z.input<typeof EntryPayloadSchema>;
 
 export async function getEntries(month: number, year: number) {
   await dbConnect();
@@ -68,206 +64,146 @@ export async function getEntries(month: number, year: number) {
   return JSON.parse(JSON.stringify({ ...grouped, prevBalance }));
 }
 
-export interface EntryPayload {
-  amount: number;
-  payment_method: string;
-  iou?: IOUData;
-  date?: string;
-  description?: string;
-  [key: string]: unknown;
-}
+// ── Shared helpers ───────────────────────────────────────────────────────────
 
-export async function addEntry(type: 'expense' | 'cashin', payload: EntryPayload | EntryPayload[]) {
-  await dbConnect();
-  const user = await getCurrentUser();
-  if (!user) throw new Error('Unauthorized');
-
-  const payloadsArray = Array.isArray(payload) ? payload : [payload];
-  const parsed = z.array(EntryPayloadSchema).safeParse(payloadsArray);
-  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
-
+/** Runs `fn` in a Mongo transaction: commit on success, abort + rethrow on failure. */
+async function inTransaction<T>(fn: (session: ClientSession) => Promise<T>): Promise<T> {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    for (const p of parsed.data) {
-      // Build the IOU sub-document inline if present
-      const iouSubDoc = p.iou
-        ? {
-            contact_id: p.iou.contactId,
-            iou_type: p.iou.iouType,
-            iou_action: p.iou.iouAction,
-            details: p.iou.details || '',
-          }
-        : null;
-
-      await Entry.create(
-        [{ ...p, type, iou: iouSubDoc }],
-        { session }
-      );
-
-      // Update payment method balance
-      const method = await PaymentMethod.findOne({ name: p.payment_method }).session(session);
-      if (method) {
-        method.balance += type === 'cashin' ? p.amount : -p.amount;
-        await method.save({ session });
-      }
-
-      // Update IOU contact totals
-      if (p.iou) {
-        const contact = await IOUContact.findById(p.iou.contactId).session(session);
-        if (contact) {
-          if (p.iou.iouType === 'receivable') {
-            contact.total_receivable += p.iou.iouAction === 'create' ? p.amount : -p.amount;
-          } else if (p.iou.iouType === 'debt') {
-            contact.total_debt += p.iou.iouAction === 'create' ? p.amount : -p.amount;
-          }
-          if (!contact.primary_type) contact.primary_type = p.iou.iouType;
-          await contact.save({ session });
-        }
-      }
-    }
-
+    const result = await fn(session);
     await session.commitTransaction();
+    return result;
   } catch (err) {
     await session.abortTransaction();
     throw err;
   } finally {
     session.endSession();
   }
+}
 
+/** Effect of an entry on its payment method balance: cash-in adds, expense subtracts. */
+const signedAmount = (type: EntryType, amount: number) => (type === 'cashin' ? amount : -amount);
+
+async function adjustBalance(session: ClientSession, methodName: string, delta: number) {
+  const method = await PaymentMethod.findOne({ name: methodName }).session(session);
+  if (!method) return;
+  method.balance += delta;
+  await method.save({ session });
+}
+
+interface IouSubDoc {
+  contact_id: unknown;
+  iou_type: 'debt' | 'receivable';
+  iou_action: 'create' | 'repay';
+  details?: string;
+}
+
+function toIouSubDoc(iou: EntryPayload['iou']): IouSubDoc | null {
+  if (!iou) return null;
+  return {
+    contact_id: iou.contactId,
+    iou_type: iou.iouType,
+    iou_action: iou.iouAction,
+    details: iou.details || '',
+  };
+}
+
+/**
+ * Applies (direction = 1) or reverts (direction = -1) an IOU entry's effect on its contact's
+ * running total. A 'create' grows the total, a 'repay' shrinks it.
+ * `claimPrimary` sets the contact's primary_type on its first IOU (only when applying).
+ */
+async function adjustContact(
+  session: ClientSession,
+  iou: IouSubDoc,
+  amount: number,
+  direction: 1 | -1,
+  claimPrimary = false
+) {
+  const contact = await IOUContact.findById(iou.contact_id).session(session);
+  if (!contact) return;
+  const field = iou.iou_type === 'receivable' ? 'total_receivable' : 'total_debt';
+  contact[field] += direction * (iou.iou_action === 'create' ? amount : -amount);
+  if (claimPrimary && !contact.primary_type) contact.primary_type = iou.iou_type;
+  await contact.save({ session });
+}
+
+function revalidateLedgerPaths() {
   revalidatePath('/');
   revalidatePath('/ledger');
   revalidatePath('/debts');
+}
+
+async function requireUser() {
+  await dbConnect();
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Unauthorized');
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+
+export async function addEntry(type: EntryType, payload: EntryPayload | EntryPayload[]) {
+  await requireUser();
+
+  const parsed = z.array(EntryPayloadSchema).safeParse(Array.isArray(payload) ? payload : [payload]);
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+
+  await inTransaction(async (session) => {
+    for (const { iou: iouInput, ...fields } of parsed.data) {
+      const iou = toIouSubDoc(iouInput);
+      await Entry.create([{ ...fields, type, iou }], { session });
+      await adjustBalance(session, fields.payment_method, signedAmount(type, fields.amount));
+      if (iou) await adjustContact(session, iou, fields.amount, 1, true);
+    }
+  });
+
+  revalidateLedgerPaths();
   return { success: true };
 }
 
-export async function updateEntry(type: 'expense' | 'cashin', id: string, payload: EntryPayload) {
+export async function updateEntry(type: EntryType, id: string, payload: EntryPayload) {
   const parsed = EntryPayloadSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
-  await dbConnect();
-  const user = await getCurrentUser();
-  if (!user) throw new Error('Unauthorized');
+  await requireUser();
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    const oldEntry = await Entry.findById(id).session(session);
-    if (!oldEntry) throw new Error('Entry not found');
-
-    // Revert old IOU contact totals
-    if (oldEntry.iou) {
-      const oldContact = await IOUContact.findById(oldEntry.iou.contact_id).session(session);
-      if (oldContact) {
-        if (oldEntry.iou.iou_type === 'receivable') {
-          oldContact.total_receivable -= oldEntry.iou.iou_action === 'create' ? oldEntry.amount : -oldEntry.amount;
-        } else if (oldEntry.iou.iou_type === 'debt') {
-          oldContact.total_debt -= oldEntry.iou.iou_action === 'create' ? oldEntry.amount : -oldEntry.amount;
-        }
-        await oldContact.save({ session });
-      }
-    }
-
-    // Revert old payment method balance
-    const oldMethod = await PaymentMethod.findOne({ name: oldEntry.payment_method }).session(session);
-    if (oldMethod) {
-      oldMethod.balance += oldEntry.type === 'cashin' ? -oldEntry.amount : oldEntry.amount;
-      await oldMethod.save({ session });
-    }
-
-    // Build new IOU sub-document
-    const iouSubDoc = parsed.data.iou
-      ? {
-          contact_id: parsed.data.iou.contactId,
-          iou_type: parsed.data.iou.iouType,
-          iou_action: parsed.data.iou.iouAction,
-          details: parsed.data.iou.details || '',
-        }
-      : null;
-
-    // Apply updates
-    Object.assign(oldEntry, parsed.data);
-    oldEntry.iou = iouSubDoc;
-    await oldEntry.save({ session });
-
-    // Apply new payment method balance
-    const newMethod = await PaymentMethod.findOne({ name: parsed.data.payment_method }).session(session);
-    if (newMethod) {
-      newMethod.balance += type === 'cashin' ? parsed.data.amount : -parsed.data.amount;
-      await newMethod.save({ session });
-    }
-
-    // Apply new IOU contact totals
-    if (parsed.data.iou) {
-      const newContact = await IOUContact.findById(parsed.data.iou.contactId).session(session);
-      if (newContact) {
-        if (parsed.data.iou.iouType === 'receivable') {
-          newContact.total_receivable += parsed.data.iou.iouAction === 'create' ? parsed.data.amount : -parsed.data.amount;
-        } else if (parsed.data.iou.iouType === 'debt') {
-          newContact.total_debt += parsed.data.iou.iouAction === 'create' ? parsed.data.amount : -parsed.data.amount;
-        }
-        if (!newContact.primary_type) newContact.primary_type = parsed.data.iou.iouType;
-        await newContact.save({ session });
-      }
-    }
-
-    await session.commitTransaction();
-  } catch (err) {
-    await session.abortTransaction();
-    throw err;
-  } finally {
-    session.endSession();
-  }
-
-  revalidatePath('/');
-  revalidatePath('/ledger');
-  revalidatePath('/debts');
-  return { success: true };
-}
-
-export async function deleteEntry(type: 'expense' | 'cashin', id: string) {
-  await dbConnect();
-  const user = await getCurrentUser();
-  if (!user) throw new Error('Unauthorized');
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
+  await inTransaction(async (session) => {
     const entry = await Entry.findById(id).session(session);
     if (!entry) throw new Error('Entry not found');
 
-    // Revert IOU contact totals
-    if (entry.iou) {
-      const contact = await IOUContact.findById(entry.iou.contact_id).session(session);
-      if (contact) {
-        if (entry.iou.iou_type === 'receivable') {
-          contact.total_receivable -= entry.iou.iou_action === 'create' ? entry.amount : -entry.amount;
-        } else if (entry.iou.iou_type === 'debt') {
-          contact.total_debt -= entry.iou.iou_action === 'create' ? entry.amount : -entry.amount;
-        }
-        await contact.save({ session });
-      }
-    }
+    // Undo the old entry's effects
+    if (entry.iou) await adjustContact(session, entry.iou, entry.amount, -1);
+    await adjustBalance(session, entry.payment_method, -signedAmount(entry.type, entry.amount));
 
-    // Revert payment method balance
-    const method = await PaymentMethod.findOne({ name: entry.payment_method }).session(session);
-    if (method) {
-      method.balance += entry.type === 'cashin' ? -entry.amount : entry.amount;
-      await method.save({ session });
-    }
+    const { iou: iouInput, ...fields } = parsed.data;
+    const iou = toIouSubDoc(iouInput);
+    Object.assign(entry, fields);
+    entry.iou = iou;
+    await entry.save({ session });
 
+    // Apply the new entry's effects
+    await adjustBalance(session, fields.payment_method, signedAmount(type, fields.amount));
+    if (iou) await adjustContact(session, iou, fields.amount, 1, true);
+  });
+
+  revalidateLedgerPaths();
+  return { success: true };
+}
+
+// `type` is kept so existing callers keep working; the stored entry's own type is what is reverted.
+export async function deleteEntry(_type: EntryType, id: string) {
+  await requireUser();
+
+  await inTransaction(async (session) => {
+    const entry = await Entry.findById(id).session(session);
+    if (!entry) throw new Error('Entry not found');
+
+    if (entry.iou) await adjustContact(session, entry.iou, entry.amount, -1);
+    await adjustBalance(session, entry.payment_method, -signedAmount(entry.type, entry.amount));
     await Entry.deleteOne({ _id: id }).session(session);
+  });
 
-    await session.commitTransaction();
-  } catch (err) {
-    await session.abortTransaction();
-    throw err;
-  } finally {
-    session.endSession();
-  }
-
-  revalidatePath('/');
-  revalidatePath('/ledger');
-  revalidatePath('/debts');
+  revalidateLedgerPaths();
   return { success: true };
 }

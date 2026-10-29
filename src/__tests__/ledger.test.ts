@@ -26,8 +26,7 @@ vi.mock('next/headers', () => ({
 const TEST_USER_ID = new mongoose.Types.ObjectId().toString();
 vi.mock('@/lib/auth', () => ({
   getCurrentUser: vi.fn(() => Promise.resolve({ userId: TEST_USER_ID, username: 'testuser' })),
-  signToken: vi.fn(),
-  setAuthCookie: vi.fn(),
+  createSession: vi.fn(),
   removeAuthCookie: vi.fn(),
 }));
 
@@ -297,5 +296,152 @@ describe('updateEntry', () => {
 
     expect(cash?.balance).toBe(1000); // fully restored
     expect(bank?.balance).toBe(1700); // 2000 - 300
+  });
+});
+
+// ─── IOU totals across action/type combinations ──────────────────────────────
+
+const iou = (contactId: string, iouType: 'debt' | 'receivable', iouAction: 'create' | 'repay') => ({
+  contactId,
+  iouType,
+  iouAction,
+});
+
+describe('IOU totals — debt/receivable × create/repay', () => {
+  beforeEach(async () => {
+    await createPaymentMethod('Cash', 5000);
+  });
+
+  it('tracks debt: create increases total_debt, repay decreases it', async () => {
+    const c = await createIOUContact('Frank');
+    const id = c._id.toString();
+
+    await addEntry('cashin', { amount: 800, description: 'Borrowed', payment_method: 'Cash', date: '2026-05-01', iou: iou(id, 'debt', 'create') });
+    expect((await IOUContact.findById(id))?.total_debt).toBe(800);
+
+    await addEntry('expense', { amount: 300, description: 'Repaid', payment_method: 'Cash', date: '2026-05-02', iou: iou(id, 'debt', 'repay') });
+    const after = await IOUContact.findById(id);
+    expect(after?.total_debt).toBe(500);
+    expect(after?.total_receivable).toBe(0);
+    expect(after?.primary_type).toBe('debt');
+  });
+
+  it('tracks receivable: repay decreases total_receivable', async () => {
+    const c = await createIOUContact('Grace');
+    const id = c._id.toString();
+
+    await addEntry('expense', { amount: 600, description: 'Lent', payment_method: 'Cash', date: '2026-05-01', iou: iou(id, 'receivable', 'create') });
+    await addEntry('cashin', { amount: 250, description: 'Got back', payment_method: 'Cash', date: '2026-05-02', iou: iou(id, 'receivable', 'repay') });
+
+    expect((await IOUContact.findById(id))?.total_receivable).toBe(350);
+  });
+
+  it('applies several entries in one call', async () => {
+    await addEntry('expense', [
+      { amount: 100, description: 'A', payment_method: 'Cash', date: '2026-05-01' },
+      { amount: 200, description: 'B', payment_method: 'Cash', date: '2026-05-01' },
+    ]);
+
+    expect(await Entry.countDocuments({})).toBe(2);
+    expect((await PaymentMethod.findOne({ name: 'Cash' }))?.balance).toBe(4700);
+  });
+
+  it('rolls everything back when a repayment would make a total negative', async () => {
+    const c = await createIOUContact('Heidi');
+
+    await expect(
+      addEntry('cashin', { amount: 100, description: 'Bad repay', payment_method: 'Cash', date: '2026-05-01', iou: iou(c._id.toString(), 'receivable', 'repay') })
+    ).rejects.toThrow();
+
+    expect(await Entry.countDocuments({})).toBe(0);
+    expect((await PaymentMethod.findOne({ name: 'Cash' }))?.balance).toBe(5000);
+    expect((await IOUContact.findById(c._id))?.total_receivable).toBe(0);
+  });
+});
+
+describe('updateEntry — IOU and cash-in handling', () => {
+  beforeEach(async () => {
+    await createPaymentMethod('Cash', 5000);
+    await createPaymentMethod('Bank', 2000);
+  });
+
+  it('re-applies contact totals when the amount of an IOU entry changes', async () => {
+    const c = await createIOUContact('Ivan');
+    const id = c._id.toString();
+    await addEntry('expense', { amount: 500, description: 'Lent', payment_method: 'Cash', date: '2026-05-01', iou: iou(id, 'receivable', 'create') });
+
+    const entry = await Entry.findOne({});
+    await updateEntry('expense', entry!._id.toString(), { amount: 300, description: 'Lent', payment_method: 'Cash', date: '2026-05-01', iou: iou(id, 'receivable', 'create') });
+
+    expect((await IOUContact.findById(id))?.total_receivable).toBe(300);
+    expect((await PaymentMethod.findOne({ name: 'Cash' }))?.balance).toBe(4700);
+  });
+
+  it('moves an IOU entry from one contact to another', async () => {
+    const a = await createIOUContact('Judy');
+    const b = await createIOUContact('Karl');
+    await addEntry('expense', { amount: 400, description: 'Lent', payment_method: 'Cash', date: '2026-05-01', iou: iou(a._id.toString(), 'receivable', 'create') });
+
+    const entry = await Entry.findOne({});
+    await updateEntry('expense', entry!._id.toString(), { amount: 400, description: 'Lent', payment_method: 'Cash', date: '2026-05-01', iou: iou(b._id.toString(), 'receivable', 'create') });
+
+    expect((await IOUContact.findById(a._id))?.total_receivable).toBe(0);
+    expect((await IOUContact.findById(b._id))?.total_receivable).toBe(400);
+    expect((await IOUContact.findById(b._id))?.primary_type).toBe('receivable');
+  });
+
+  it('reverts the contact and clears iou when the IOU is removed', async () => {
+    const c = await createIOUContact('Liam');
+    const id = c._id.toString();
+    await addEntry('expense', { amount: 250, description: 'Lent', payment_method: 'Cash', date: '2026-05-01', iou: iou(id, 'receivable', 'create') });
+
+    const entry = await Entry.findOne({});
+    await updateEntry('expense', entry!._id.toString(), { amount: 250, description: 'Not a loan', payment_method: 'Cash', date: '2026-05-01' });
+
+    expect((await IOUContact.findById(id))?.total_receivable).toBe(0);
+    expect((await Entry.findById(entry!._id))?.iou).toBeNull();
+  });
+
+  it('adds IOU data to a plain entry', async () => {
+    const c = await createIOUContact('Mona');
+    const id = c._id.toString();
+    await addEntry('cashin', { amount: 700, description: 'Money in', payment_method: 'Cash', date: '2026-05-01' });
+
+    const entry = await Entry.findOne({});
+    await updateEntry('cashin', entry!._id.toString(), { amount: 700, description: 'Borrowed', payment_method: 'Cash', date: '2026-05-01', iou: iou(id, 'debt', 'create') });
+
+    expect((await IOUContact.findById(id))?.total_debt).toBe(700);
+    expect((await Entry.findById(entry!._id))?.iou?.iou_type).toBe('debt');
+  });
+
+  it('adjusts balance correctly when a cash-in amount changes', async () => {
+    await addEntry('cashin', { amount: 500, description: 'Gift', payment_method: 'Cash', date: '2026-05-01' });
+    const entry = await Entry.findOne({});
+    await updateEntry('cashin', entry!._id.toString(), { amount: 200, description: 'Gift', payment_method: 'Cash', date: '2026-05-01' });
+
+    expect((await PaymentMethod.findOne({ name: 'Cash' }))?.balance).toBe(5200);
+  });
+
+  it('does not let a payload change the stored entry type', async () => {
+    await addEntry('expense', { amount: 100, description: 'Lunch', payment_method: 'Cash', date: '2026-05-01' });
+    const entry = await Entry.findOne({});
+
+    await updateEntry('expense', entry!._id.toString(), {
+      amount: 100, description: 'Lunch', payment_method: 'Cash', date: '2026-05-01',
+      type: 'cashin',
+    } as never);
+
+    expect((await Entry.findById(entry!._id))?.type).toBe('expense');
+  });
+});
+
+describe('deleteEntry — cash-in', () => {
+  it('takes the money back out of the payment method', async () => {
+    await createPaymentMethod('Bank', 1000);
+    await addEntry('cashin', { amount: 400, description: 'Refund', payment_method: 'Bank', date: '2026-05-01' });
+    const entry = await Entry.findOne({});
+    await deleteEntry('cashin', entry!._id.toString());
+
+    expect((await PaymentMethod.findOne({ name: 'Bank' }))?.balance).toBe(1000);
   });
 });

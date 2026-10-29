@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EntryForm } from '../EntryForm/EntryForm';
 import { addEntry, updateEntry, deleteEntry, type EntryPayload } from '@/app/actions/ledger';
 import { LedgerEntry, LedgerRow } from './types';
 import { LedgerTable } from './LedgerTable';
+import type { PaymentMethodDTO } from '@/types';
 
 interface LedgerProps {
   initialData: {
@@ -13,7 +14,7 @@ interface LedgerProps {
     cashin: Record<string, LedgerEntry[]>;
     prevBalance: number;
   };
-  paymentMethods: { _id?: string; id?: string; name: string; balance: number }[];
+  paymentMethods: PaymentMethodDTO[];
   initialMonth: number;
   initialYear: number;
 }
@@ -38,10 +39,12 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
   const [targetDate, setTargetDate] = useState('');
   const [editEntry, setEditEntry] = useState<LedgerEntry | null>(null);
 
-  // Sync currentDate when URL params change (Next.js re-renders with new props)
-  useEffect(() => {
+  // Re-sync currentDate when the URL params change (adjusting state during render, not in an effect)
+  const [syncedMonth, setSyncedMonth] = useState(`${initialYear}-${initialMonth}`);
+  if (syncedMonth !== `${initialYear}-${initialMonth}`) {
+    setSyncedMonth(`${initialYear}-${initialMonth}`);
     setCurrentDate(new Date(initialYear, initialMonth, 1));
-  }, [initialMonth, initialYear]);
+  }
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -150,6 +153,8 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
       }
     }
   }
+
+  const totalBalance = paymentMethods.reduce((acc, pm) => acc + (Number(pm.balance) || 0), 0);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setIsScrolled((e.target as HTMLDivElement).scrollLeft > 10);
@@ -302,7 +307,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
           <div className="flex flex-col items-end shrink-0 md:hidden">
             <span className="text-[9px] uppercase font-bold text-[#6366F1] leading-tight">Total Balance</span>
             <span className="text-sm font-black text-[#F8FAFC] tracking-tight leading-tight whitespace-nowrap">
-              ৳{paymentMethods.reduce((acc, pm) => acc + (Number(pm.balance) || 0), 0).toLocaleString()}
+              ৳{totalBalance.toLocaleString()}
             </span>
           </div>
         </div>
@@ -311,7 +316,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
         <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar px-3 md:px-8 md:border-r md:border-[#334155] py-1.5 md:py-0">
           <div className="flex items-center gap-4 md:gap-8 md:justify-center">
             {paymentMethods.map(pm => (
-              <div key={`footer-pm-${pm._id || pm.id}`} className="flex flex-col items-center shrink-0">
+              <div key={pm._id} className="flex flex-col items-center shrink-0">
                 <span className="text-[9px] md:text-xs uppercase font-bold text-[#94A3B8] leading-none mb-0.5 whitespace-nowrap">{pm.name}</span>
                 <span className="text-xs md:text-lg font-bold text-[#F8FAFC] whitespace-nowrap leading-none">৳{(Number(pm.balance) || 0).toLocaleString()}</span>
               </div>
@@ -323,7 +328,7 @@ export function Ledger({ initialData, paymentMethods, initialMonth, initialYear 
         <div className="hidden md:flex flex-col items-end shrink-0">
           <span className="text-xs uppercase font-bold text-[#6366F1] leading-tight">Total Balance</span>
           <span className="text-3xl font-black text-[#F8FAFC] tracking-tight leading-tight whitespace-nowrap">
-            ৳{paymentMethods.reduce((acc, pm) => acc + (Number(pm.balance) || 0), 0).toLocaleString()}
+            ৳{totalBalance.toLocaleString()}
           </span>
         </div>
       </div>

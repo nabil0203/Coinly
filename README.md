@@ -22,7 +22,8 @@
 ## 🚀 Key Features
 
 ### 🔐 Authentication & Security
-- Secure User Registration & Login (JWT & bcrypt)
+- Secure login (JWT in an httpOnly cookie & bcrypt); public registration is switched off
+- Login rate limiting (Upstash Redis)
 - Robust Input Validation using Zod
 - Protection against NoSQL Injection vulnerabilities
 
@@ -63,33 +64,29 @@
 ```
 coinly/
 ├── src/
-│   ├── app/                 # Next.js App Router (pages, layouts, auth/API logic)
-│   ├── actions/             # Next.js Server Actions (ledger calculations, DB queries)
-│   ├── components/          # Reusable UI components (IOUContactCard, modals, etc.)
-│   ├── models/              # Mongoose database schemas (User, Contact, Entry)
-│   └── lib/                 # Utility functions and database connection
-├── package.json             # Project dependencies and scripts
-└── tailwind.config.ts       # Tailwind CSS configuration
+│   ├── app/                 # Next.js App Router (pages, layouts)
+│   │   └── actions/         # Server Actions (ledger, IOU, payment methods, auth, profile)
+│   ├── components/          # UI components (ledger, entry form, debt cards, profile, ...)
+│   ├── models/              # Mongoose schemas (User, Entry, IOUContact, PaymentMethod, MandatoryExpense)
+│   ├── lib/                 # DB connection, JWT/session helpers, Zod validations, rate limiting
+│   ├── types/               # Shared TypeScript types
+│   ├── __tests__/           # Vitest tests (in-memory MongoDB replica set)
+│   └── proxy.ts             # Route protection (Next.js proxy, formerly middleware)
+├── scripts/                 # One-off maintenance scripts
+└── package.json             # Dependencies and scripts
 ```
 
 ---
 
 ## 🧩 Models
 
-### 1️⃣ User Model
-- Handles secure authentication and user profiles.
+- **User** – the account owner (single-user app).
+- **PaymentMethod** – named balances (Cash, Bank, ...) that entries move money in and out of.
+- **Entry** – a ledger line (expense or cash-in); may embed IOU data (contact, debt/receivable, create/repay).
+- **IOUContact** – a person you lend to / borrow from, with running `total_receivable` / `total_debt`.
+- **MandatoryExpense** – recurring monthly bills (feature currently hidden in the UI).
 
-### 2️⃣ Contact Model
-- Represents individuals with whom the user has financial transactions.
-- Tracks contact info and real-time overall balance.
-
-### 3️⃣ Entry/Transaction Model
-- Represents individual debt creation or repayment transactions.
-
-#### Relationship:
-- **One-to-Many**
-  - `1 User` ➝ `Multiple Contacts`
-  - `1 Contact` ➝ `Multiple Transactions`
+Entries, payment-method balances and contact totals are updated together inside a MongoDB transaction.
 
 ---
 
@@ -107,11 +104,8 @@ npm install
 ```
 
 3. **Set up environment variables**
-Create a `.env.local` file in the root directory and configure your MongoDB URI and JWT Secret:
-```env
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-```
+Copy `.env.example` to `.env.local` and fill it in (MongoDB URI, JWT secret, Upstash Redis credentials for rate limiting).
+Transactions require a replica set (Atlas works out of the box).
 
 4. **Run the development server**
 ```bash
@@ -121,6 +115,11 @@ npm run dev
 5. **Open browser and visit:**
 ```bash
 http://localhost:3000/
+```
+
+6. **Run the tests** (downloads an in-memory MongoDB the first time)
+```bash
+npm test
 ```
 
 ---

@@ -24,7 +24,7 @@ interface Transaction {
   amount: number;
   details?: string;
   date: string;
-  entry?: { _id?: string; type?: string; payment_method?: string } | string | null;
+  entry: { type: 'expense' | 'cashin'; payment_method: string };
 }
 
 const formatDate = (dateString: string) => {
@@ -69,17 +69,9 @@ export function DebtReceivableCard({ contact, iouType }: DebtReceivableCardProps
       return;
     }
 
-    const entryId = typeof tx.entry === 'object' && tx.entry !== null ? tx.entry._id : (typeof tx.entry === 'string' ? tx.entry : null);
-    const entryType = typeof tx.entry === 'object' && tx.entry !== null ? tx.entry.type : null;
-
-    if (!entryId) {
-      alert('Cannot delete this record: associated ledger entry not found.');
-      return;
-    }
-
     try {
       setDeletingTxId(tx._id);
-      await deleteEntry((entryType as 'expense' | 'cashin') || 'expense', entryId);
+      await deleteEntry(tx.entry.type, tx._id);
       const data = await getContactHistory(contact._id);
       setHistory(data);
       router.refresh();
@@ -279,7 +271,7 @@ export function DebtReceivableCard({ contact, iouType }: DebtReceivableCardProps
                               >
                                 {formatDate(tx.date)}
                               </span>
-                              {typeof tx.entry === 'object' && tx.entry?.payment_method && (
+                              {tx.entry.payment_method && (
                                 <span
                                   className="text-[9px] sm:text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-md"
                                   style={{

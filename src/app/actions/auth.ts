@@ -4,7 +4,7 @@ import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import PaymentMethod from '@/models/PaymentMethod';
 import bcrypt from 'bcryptjs';
-import { signToken, setAuthCookie, removeAuthCookie } from '@/lib/auth';
+import { createSession, removeAuthCookie } from '@/lib/auth';
 import { LoginSchema, RegistrationSchema } from '@/lib/validations';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
@@ -61,20 +61,15 @@ export async function registerAction(formData: FormData) {
       password: hashedPassword,
     });
 
-    // Initialize default payment methods for new user
+    // Initialize default payment methods
     const defaultMethods = ['Cash', 'Bank', 'Rocket', 'Bkash', 'Nagad'];
     await Promise.all(
       defaultMethods.map(name => 
-        PaymentMethod.create({
-          name,
-          balance: 0,
-          user: user._id
-        })
+        PaymentMethod.create({ name, balance: 0 })
       )
     );
 
-    const token = await signToken({ userId: user._id.toString(), username: user.username });
-    await setAuthCookie(token);
+    await createSession({ userId: user._id.toString(), username: user.username });
 
     return { success: true };
   } catch (error: unknown) {
@@ -110,8 +105,7 @@ export async function loginAction(formData: FormData) {
     return { error: 'Invalid username or password' };
   }
 
-  const token = await signToken({ userId: user._id.toString(), username: user.username });
-  await setAuthCookie(token);
+  await createSession({ userId: user._id.toString(), username: user.username });
 
   return { success: true };
 }

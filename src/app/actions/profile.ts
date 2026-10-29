@@ -43,7 +43,7 @@ export async function updateProfileAction(data: {
   }
 }
 
-export async function changePasswordAction(data: unknown) {
+export async function changePasswordAction(formData: FormData) {
   await dbConnect();
   const authUser = await getCurrentUser();
   if (!authUser) return { error: 'Authentication required' };
@@ -52,7 +52,7 @@ export async function changePasswordAction(data: unknown) {
     const user = await User.findById(authUser.userId);
     if (!user) return { error: 'User not found' };
 
-    const parsed = ChangePasswordSchema.safeParse(data);
+    const parsed = ChangePasswordSchema.safeParse(Object.fromEntries(formData));
     if (!parsed.success) return { error: parsed.error.issues[0].message };
 
     const { currentPassword, newPassword } = parsed.data;

@@ -5,9 +5,10 @@ import dbConnect from '@/lib/db';
 import PaymentMethod from '@/models/PaymentMethod';
 import { getCurrentUser } from '@/lib/auth';
 import { PaymentMethodSchema } from '@/lib/validations';
+import type { PaymentMethodDTO } from '@/types';
 import { revalidatePath } from 'next/cache';
 
-export const getPaymentMethods = cache(async () => {
+export const getPaymentMethods = cache(async (): Promise<PaymentMethodDTO[]> => {
   await dbConnect();
   const user = await getCurrentUser();
   if (!user) return [];

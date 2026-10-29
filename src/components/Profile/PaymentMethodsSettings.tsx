@@ -2,16 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { getMethodIcon } from '@/utils/icons';
-
-interface PaymentMethod {
-  _id?: string;
-  id?: string;
-  name: string;
-  balance: number;
-}
+import type { PaymentMethodDTO } from '@/types';
 
 interface PaymentMethodsSettingsProps {
-  paymentMethods: PaymentMethod[];
+  paymentMethods: PaymentMethodDTO[];
   addPaymentMethod: (name: string, balance?: number) => Promise<unknown>;
   renamePaymentMethod: (id: string, newName: string) => Promise<unknown>;
   deletePaymentMethod: (id: string) => Promise<unknown>;
@@ -171,7 +165,7 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {paymentMethods.map((pm, index) => (
           <div
-            key={pm._id || pm.id}
+            key={pm._id}
             className="group relative p-4 sm:p-5 rounded-2xl flex items-center gap-4 transition-all duration-300"
             style={{
               background: 'linear-gradient(160deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%)',
@@ -180,9 +174,9 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
               boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
               animation: 'slide-in-up 0.35s ease-out both',
               animationDelay: `${index * 60}ms`,
-              opacity: deletingMethodId === (pm._id || pm.id) ? 0.3 : undefined,
-              transform: deletingMethodId === (pm._id || pm.id) ? 'scale(0.96)' : undefined,
-              pointerEvents: deletingMethodId === (pm._id || pm.id) ? 'none' : undefined,
+              opacity: deletingMethodId === pm._id ? 0.3 : undefined,
+              transform: deletingMethodId === pm._id ? 'scale(0.96)' : undefined,
+              pointerEvents: deletingMethodId === pm._id ? 'none' : undefined,
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.35)';
@@ -210,7 +204,7 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
             </div>
 
             <div className="flex-1 min-w-0 pr-6">
-              {editingMethodId === (pm._id || pm.id) ? (
+              {editingMethodId === pm._id ? (
                 <div className="flex items-center w-full">
                   <input
                     className="w-full text-sm font-black border-b-2 border-[#6366F1] outline-none bg-transparent pb-0.5 focus:border-[#818CF8] transition-colors"
@@ -218,12 +212,12 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
                     value={editMethodName}
                     onChange={e => setEditMethodName(e.target.value)}
                     onKeyDown={e => {
-                      if (e.key === 'Enter') handleRenameMethod((pm._id || pm.id) as string);
+                      if (e.key === 'Enter') handleRenameMethod(pm._id);
                       if (e.key === 'Escape') setEditingMethodId(null);
                     }}
                     onBlur={() => {
                       if (editMethodName.trim() && editMethodName !== pm.name) {
-                        handleRenameMethod((pm._id || pm.id) as string);
+                        handleRenameMethod(pm._id);
                       } else {
                         setEditingMethodId(null);
                       }
@@ -246,7 +240,7 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
             <div className="absolute top-3.5 right-3.5 dropdown-container">
               <button
                 type="button"
-                onClick={() => setActiveDropdownId(activeDropdownId === (pm._id || pm.id) ? null : ((pm._id || pm.id) as string))}
+                onClick={() => setActiveDropdownId(activeDropdownId === pm._id ? null : pm._id)}
                 className="p-1 rounded-lg transition-colors cursor-pointer"
                 style={{ color: '#64748B' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#F1F5F9'; }}
@@ -257,7 +251,7 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
                 </svg>
               </button>
 
-              {activeDropdownId === (pm._id || pm.id) && (
+              {activeDropdownId === pm._id && (
                 <div
                   className="absolute right-0 mt-1 w-28 rounded-xl shadow-2xl overflow-hidden z-20"
                   style={{
@@ -271,7 +265,7 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
                   <button
                     type="button"
                     onClick={() => {
-                      setEditingMethodId((pm._id || pm.id) as string);
+                      setEditingMethodId(pm._id);
                       setEditMethodName(pm.name);
                       setActiveDropdownId(null);
                     }}
@@ -288,10 +282,10 @@ export function PaymentMethodsSettings({ paymentMethods, addPaymentMethod, renam
                   <button
                     type="button"
                     onClick={() => {
-                      handleDeleteMethod((pm._id || pm.id) as string);
+                      handleDeleteMethod(pm._id);
                       setActiveDropdownId(null);
                     }}
-                    disabled={deletingMethodId === (pm._id || pm.id)}
+                    disabled={deletingMethodId === pm._id}
                     className="w-full text-left px-3.5 py-2 text-xs font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
                     style={{ color: '#F43F5E' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.10)'; }}

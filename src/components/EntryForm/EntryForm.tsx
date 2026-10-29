@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getIOUContacts, createOrUpdateContact } from '@/app/actions/iou';
 import { type EntryPayload } from '@/app/actions/ledger';
 import { Entry, EntryFormRow } from './EntryFormRow';
+import type { PaymentMethodDTO } from '@/types';
 
 interface EditingEntry {
   _id?: string;
@@ -25,7 +26,7 @@ interface EntryFormProps {
   onDelete?: (type: 'expense' | 'cashin', id: string) => Promise<void> | void;
   type: 'expense' | 'cashin';
   dateStr: string;
-  paymentMethods: { _id?: string; id?: string; name: string; balance: number }[];
+  paymentMethods: PaymentMethodDTO[];
   editEntry?: EditingEntry | null;
 }
 

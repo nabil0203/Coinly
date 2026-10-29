@@ -2,24 +2,14 @@
 
 import React from 'react';
 import { getMethodIcon } from '@/utils/icons';
+import type { PaymentMethodDTO } from '@/types';
 
-interface PaymentMethod {
-  _id?: string;
-  id?: string;
-  name: string;
-  balance: number;
-}
-
-interface FinancialSummaryProps {
-  paymentMethods: PaymentMethod[];
-}
-
-export function PaymentMethodsGrid({ paymentMethods }: FinancialSummaryProps) {
+export function PaymentMethodsGrid({ paymentMethods }: { paymentMethods: PaymentMethodDTO[] }) {
   return (
     <div className="w-full flex flex-wrap justify-center gap-3 md:gap-4 px-2 md:px-4">
       {paymentMethods.map((method, index) => (
         <div
-          key={method._id || method.id}
+          key={method._id}
           className="group flex items-center rounded-2xl pl-4 pr-5 py-3 md:py-4 transition-all duration-250 cursor-default w-full sm:w-auto interactive-card shimmer-hover"
           style={{
             background: 'linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',

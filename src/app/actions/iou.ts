@@ -26,16 +26,15 @@ export async function getContactHistory(contactId: string) {
     .sort({ date: -1, createdAt: -1 })
     .lean();
 
-  // Shape the response to match what the UI expects (same structure as old IOUTransaction + populated entry)
+  // `_id` is the ledger entry's id, so the UI can delete the entry straight from a history row
   const history = entries.map((e) => ({
     _id: e._id,
-    contact: contactId,
     iou_type: e.iou?.iou_type,
     iou_action: e.iou?.iou_action,
     amount: e.amount,
     date: e.date,
     details: e.iou?.details,
-    entry: e,
+    entry: { type: e.type, payment_method: e.payment_method },
   }));
 
   return JSON.parse(JSON.stringify(history));
